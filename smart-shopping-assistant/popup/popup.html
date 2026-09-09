@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خریدار پرو</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app">
+    <!-- ═══════════ سربرگ ═══════════ -->
+    <header class="topbar" id="topbar">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 7h12l1.2 13.2a1 1 0 0 1-1 1.1H5.8a1 1 0 0 1-1-1.1L6 7z"/>
+            <path d="M9 10V6a3 3 0 0 1 6 0v4"/>
+            <path d="M9.5 15.5l2 2 3.5-4" class="logo-check"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>خریدار پرو</h1>
+          <span class="brand-sub" id="status-line"><span class="dot"></span><span id="status-text">آماده</span></span>
+        </div>
+      </div>
+      <div class="topbar-actions" id="main-actions" hidden>
+        <button class="icon-btn" id="btn-new-chat" title="گفتگوی جدید" aria-label="گفتگوی جدید">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        </button>
+        <button class="icon-btn" id="btn-settings" title="تنظیمات" aria-label="تنظیمات">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+
+      <!-- ═══════════ صفحه ۱: خوش‌آمد + افشای کامل ═══════════ -->
+      <section class="screen" id="screen-welcome" hidden>
+        <div class="hero">
+          <div class="hero-badge">✦ نسخه ۲.۰ — حریم خصوصی شفاف</div>
+          <h2>دستیار خرید هوشمند شما</h2>
+          <p class="hero-sub">قبل از شروع، دقیقاً بدانید چه اتفاقی می‌افتد. شفافیت کامل، بدون ستاره پشت پرده.</p>
+        </div>
+
+        <div class="disclosure-card">
+          <h3>✅ آنچه این افزونه انجام می‌دهد:</h3>
+          <ul>
+            <li><b>تاریخچه مرور</b> (بازه انتخابی شما) را می‌خواند و فقط <b>نام دامنه + تعداد بازدید</b> نگه می‌دارد</li>
+            <li><b>عبارت‌های جستجو</b> شما را استخراج، از کلمات نامناسب پاک و تکراری‌ها را ادغام می‌کند</li>
+            <li>با <b>هوش مصنوعی AvalAI</b> گفتگوی خرید برقرار می‌کند و در فروشگاه‌های معتبر جستجو می‌سازد</li>
+            <li>خروجی پاکسازی‌شده را <b>روی همین سیستم</b> ذخیره می‌کند (یا اختیاری: به ربات تلگرام شما می‌فرستد)</li>
+          </ul>
+          <h3>🛡️ آنچه هرگز انجام نمی‌دهد:</h3>
+          <ul>
+            <li>❌ <b>هیچ مقدار کوکی</b> (نشست، لاگین، توکن) جمع‌آوری یا ذخیره یا ارسال نمی‌شود</li>
+            <li>❌ دامنه‌های <b>بانکی، پیام‌رسان، ایمیل، محتوای جنسی</b> به‌کلی حذف می‌شوند (حتی نامشان)</li>
+            <li>❌ <b>URL کامل</b> و <b>عنوان صفحات</b> ذخیره نمی‌شوند — فقط دامنه</li>
+            <li>❌ هیچ داده‌ای بدون اقدام صریح شما از دستگاه خارج نمی‌شود</li>
+          </ul>
+        </div>
+
+        <label class="consent-row">
+          <input type="checkbox" id="consent-check">
+          <span>تمام موارد بالا را خواندم، می‌فهمم و می‌پذیرم.</span>
+        </label>
+        <button class="btn btn-primary btn-block" id="btn-accept-consent" disabled>
+          ادامه و پیکربندی امن
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M19 12H5m7-7l-7 7 7 7"/></svg>
+        </button>
+      </section>
+
+      <!-- ═══════════ صفحه ۲: پیکربندی امن ═══════════ -->
+      <section class="screen" id="screen-setup" hidden>
+        <h2 class="screen-title">🔐 پیکربندی امن</h2>
+        <p class="screen-desc">رازها فقط رمزنگاری‌شده ذخیره می‌شوند. یک «رمز رمزنگاری» انتخاب کنید:</p>
+
+        <div class="field">
+          <label for="setup-pass">رمز رمزنگاری (حداقل ۶ کاراکتر)</label>
+          <div class="input-wrap">
+            <input type="password" id="setup-pass" placeholder="مثلاً یک عبارت به‌یادماندنی" autocomplete="new-password">
+            <button type="button" class="eye" data-eye="setup-pass" aria-label="نمایش/مخفی">👁</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="setup-pass2">تکرار رمز رمزنگاری</label>
+          <input type="password" id="setup-pass2" autocomplete="new-password">
+        </div>
+
+        <div class="divider"><span>اتصال هوش مصنوعی AvalAI</span></div>
+        <div class="field">
+          <label for="setup-key">کلید API از <a href="https://chat.avalai.ir/platform/home" target="_blank" rel="noopener noreferrer">داشبورد AvalAI</a></label>
+          <div class="input-wrap">
+            <input type="password" id="setup-key" placeholder="sk-…" autocomplete="off">
+            <button type="button" class="eye" data-eye="setup-key" aria-label="نمایش/مخفی">👁</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="setup-model">مدل</label>
+          <select id="setup-model"></select>
+          <input type="text" id="setup-model-custom" placeholder="نام مدل سفارشی، مثل gpt-5-mini" hidden>
+        </div>
+        <div class="field">
+          <label for="setup-device">برچسب این دستگاه <small>(در خروجی‌ها دیده می‌شود)</small></label>
+          <input type="text" id="setup-device" value="لپ‌تاپ من" maxlength="60">
+        </div>
+
+        <details class="accordion">
+          <summary>📨 ارسال اختیاری به ربات تلگرام (می‌توانید خالی بگذارید)</summary>
+          <div class="field">
+            <label for="setup-tg-token">توکن ربات (از @BotFather)</label>
+            <input type="password" id="setup-tg-token" placeholder="123456789:AAF…" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="setup-tg-chat">شناسه عددی ادمین</label>
+            <input type="text" id="setup-tg-chat" placeholder="مثلاً 8810826597" inputmode="numeric" autocomplete="off">
+          </div>
+          <p class="hint">اطلاعات ربات با AES-256-GCM رمزنگاری و در هیچ لاگی نوشته نمی‌شود.</p>
+        </details>
+
+        <button class="btn btn-primary btn-block" id="btn-finish-setup">ذخیره امن و شروع</button>
+      </section>
+
+      <!-- ═══════════ صفحه ۳: بازکردن قفل ═══════════ -->
+      <section class="screen screen-center" id="screen-unlock" hidden>
+        <div class="lock-art">🔒</div>
+        <h2>قفل رمزنگاری بسته است</h2>
+        <p class="screen-desc">برای استفاده از کلید ذخیره‌شده، رمز رمزنگاری را وارد کنید:</p>
+        <div class="field">
+          <div class="input-wrap">
+            <input type="password" id="unlock-pass" placeholder="رمز رمزنگاری" autocomplete="current-password">
+            <button type="button" class="eye" data-eye="unlock-pass" aria-label="نمایش/مخفی">👁</button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" id="btn-unlock">باز کردن قفل</button>
+      </section>
+
+      <!-- ═══════════ صفحه ۴: چت اصلی ═══════════ -->
+      <section class="screen screen-chat" id="screen-chat" hidden>
+        <div class="quick-search">
+          <input type="text" id="quick-search-input" placeholder="جستجوی سریع محصول در فروشگاه‌ها…" aria-label="جستجوی سریع">
+          <button class="btn btn-ghost btn-sm" id="btn-quick-search">🔍</button>
+        </div>
+        <div class="store-chips" id="store-chips" hidden></div>
+
+        <div class="chat-box" id="chat-box" aria-live="polite"></div>
+
+        <div class="snapshot-bar" id="snapshot-bar" hidden>
+          <span id="snapshot-summary"></span>
+          <button class="btn btn-ghost btn-xs" id="btn-recollect">تحلیل مجدد</button>
+        </div>
+
+        <div class="input-area">
+          <textarea id="user-input" rows="1" placeholder="از خریدار پرو بپرسید…" aria-label="پیام"></textarea>
+          <button class="send-btn" id="btn-send" disabled aria-label="ارسال">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.478 2.405a.75.75 0 0 0-.926.94l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.405z"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- ═══════════ صفحه خطا ═══════════ -->
+      <section class="screen screen-center" id="screen-error" hidden>
+        <div class="error-art">⚠️</div>
+        <h2>مشکلی پیش آمد</h2>
+        <p class="error-msg" id="error-msg"></p>
+        <button class="btn btn-primary" id="btn-retry">تلاش مجدد</button>
+      </section>
+    </main>
+  </div>
+
+  <!-- ═══════════ مودال تنظیمات ═══════════ -->
+  <div class="modal-backdrop" id="modal-settings" hidden>
+    <div class="modal" role="dialog" aria-label="تنظیمات">
+      <header class="modal-head">
+        <h3>⚙️ تنظیمات</h3>
+        <button class="icon-btn" data-close="modal-settings" aria-label="بستن">✕</button>
+      </header>
+      <div class="modal-body">
+        <div class="tabs">
+          <button class="tab active" data-tab="tab-ai">هوش مصنوعی</button>
+          <button class="tab" data-tab="tab-telegram">تلگرام</button>
+          <button class="tab" data-tab="tab-data">داده و حریم خصوصی</button>
+        </div>
+
+        <div class="tab-pane active" id="tab-ai">
+          <div class="field">
+            <label for="set-key">کلید AvalAI <small id="set-key-mask"></small></label>
+            <input type="password" id="set-key" placeholder="برای تغییر، کلید جدید را وارد کنید" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="set-model">مدل</label>
+            <select id="set-model"></select>
+            <input type="text" id="set-model-custom" placeholder="نام مدل سفارشی" hidden>
+          </div>
+          <div class="field">
+            <label for="set-device">برچسب دستگاه</label>
+            <input type="text" id="set-device" maxlength="60">
+          </div>
+          <div class="field">
+            <label for="set-days">بازه تحلیل تاریخچه</label>
+            <select id="set-days">
+              <option value="7">۷ روز اخیر</option>
+              <option value="14">۱۴ روز اخیر</option>
+              <option value="30">۳۰ روز اخیر</option>
+              <option value="60">۶۰ روز اخیر</option>
+              <option value="90">۹۰ روز اخیر</option>
+            </select>
+          </div>
+          <div class="row">
+            <button class="btn btn-ghost" id="btn-test-ai">تست اتصال</button>
+            <button class="btn btn-primary" id="btn-save-ai">ذخیره</button>
+          </div>
+        </div>
+
+        <div class="tab-pane" id="tab-telegram">
+          <label class="switch-row">
+            <span>ارسال خروجی به ربات تلگرام</span>
+            <input type="checkbox" id="set-tg-enabled" class="switch">
+          </label>
+          <div class="field">
+            <label for="set-tg-token">توکن ربات <small id="set-tg-mask"></small></label>
+            <input type="password" id="set-tg-token" placeholder="برای تغییر، توکن جدید" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="set-tg-chat">شناسه عددی ادمین</label>
+            <input type="text" id="set-tg-chat" inputmode="numeric" autocomplete="off">
+          </div>
+          <div class="row">
+            <button class="btn btn-ghost" id="btn-test-tg">تست ارسال</button>
+            <button class="btn btn-primary" id="btn-save-tg">ذخیره</button>
+          </div>
+          <p class="hint">🛡️ توکن و شناسه با AES-256-GCM رمزنگاری می‌شوند و در هیچ لاگی ظاهر نمی‌شوند.</p>
+        </div>
+
+        <div class="tab-pane" id="tab-data">
+          <div class="privacy-summary" id="privacy-summary"></div>
+          <div class="stack">
+            <button class="btn btn-ghost btn-block" id="btn-export-json">⬇️ دانلود خروجی JSON (پاکسازی‌شده)</button>
+            <button class="btn btn-ghost btn-block" id="btn-send-tg-export">📨 ارسال به تلگرام</button>
+            <button class="btn btn-danger btn-block" id="btn-clear-data">🗑 حذف کامل داده‌های ذخیره‌شده</button>
+          </div>
+          <details class="accordion">
+            <summary>🛡️ گزارش کامل حریم خصوصی</summary>
+            <ul class="privacy-list" id="privacy-list"></ul>
+          </details>
+          <div class="row">
+            <button class="btn btn-ghost" id="btn-lock">🔒 قفل کردن رازها</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ Toast ═══════════ -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
