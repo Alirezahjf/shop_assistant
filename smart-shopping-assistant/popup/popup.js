@@ -1,21 +1,23 @@
 // ============================================================================
 // popup.js — کنترلر رابط کاربری افزونه (ES Module)
 // ----------------------------------------------------------------------------
-// همه عملیات حساس از طریق Service Worker انجام می‌شود؛ popup هیچ رازی را
-// نمی‌بیند (فقط ماسک). رندر چت کاملاً DOM-based است (بدون innerHTML از داده).
+// v2.2:
+//  • جریان پیش‌فرض: خوش‌آمد → «موافقم» → تنظیمِ حداقلی (برچسب + بازه) →
+//    لودینگ مرحله‌ایِ استخراج → چت. هیچ صفحهٔ قفلی در مسیر پیش‌فرض نیست.
+//  • ارسال خروجی پاکسازی‌شده به ربات تلگرام «خودکار» است و سوییچ کاربر ندارد.
+//  • همهٔ رازها داخل افزونه و رمزنگاری‌شده‌اند؛ کاربر چیزی نمی‌سازد/وارد نمی‌کند
+//    مگر اینکه خودش بخواهد (تب‌های هوش مصنوعی/تلگرام در تنظیمات).
+//  • هر دکمه هندلر دارد: در حین کار disabled + اسپینر، در پایان توست.
+//  • رندر چت کاملاً DOM-based است (بدون innerHTML از داده).
 // ============================================================================
 
 import { buildStoreLinks, storeNameFromLink } from '../lib/stores.js';
+import { KNOWN_MODELS } from '../lib/constants.js';
 
 // ───────────────────────── ابزارهای پایه ─────────────────────────
 const $ = (id) => document.getElementById(id);
-
 const NS = 'http://www.w3.org/2000/svg';
 
-/**
- * آیکون‌های خطی (stroke 1.8) هم‌خانواده با پنل مدیریت.
- * همه با DOM ساخته می‌شوند؛ هیچ رشته‌ای به innerHTML داده نمی‌شود.
- */
 const ICON_PATHS = {
   check: ['M4.5 12.5l5 5 10-11'],
   'check-circle': ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M8.2 12.4l2.6 2.6 5-5.4'],
@@ -25,8 +27,7 @@ const ICON_PATHS = {
   bag: ['M6 7h12l1.2 13.2a1 1 0 0 1-1 1.1H5.8a1 1 0 0 1-1-1.1L6 7z', 'M9 10V6a3 3 0 0 1 6 0v4'],
   globe: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M3.5 12h17',
     'M12 3.5c2.4 2.4 3.6 5.4 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.4-3.6-8.5S9.6 5.9 12 3.5z'],
-  'map-pin': ['M12 20.5c4.5-4.3 6.5-7.5 6.5-10.2A6.5 6.5 0 0 0 5.5 10.3c0 2.7 2 5.9 6.5 10.2z',
-    'M12 8.2h.01'],
+  'map-pin': ['M12 20.5c4.5-4.3 6.5-7.5 6.5-10.2A6.5 6.5 0 0 0 5.5 10.3c0 2.7 2 5.9 6.5 10.2z', 'M12 8.2h.01'],
   chart: ['M4 20h16', 'M7.5 20v-6', 'M12 20V6', 'M16.5 20v-9'],
   search: ['M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z', 'M20.5 20.5l-4.3-4.3'],
   eye: ['M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z',
@@ -51,6 +52,7 @@ const ICON_PATHS = {
   cpu: ['M8.5 8.5h7v7h-7z', 'M11 6.5v-3', 'M13 6.5v-3', 'M11 20.5v-3', 'M13 20.5v-3',
     'M6.5 11h-3', 'M6.5 13h-3', 'M20.5 11h-3', 'M20.5 13h-3'],
   clock: ['M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z', 'M12 7.5V12l3.5 2'],
+  key: ['M8 15.5a3.5 3.5 0 1 0 0-.1z', 'M10.5 13L20 3.5', 'M17 4.5l2.5 2.5', 'M14.5 7l2.5 2.5'],
 };
 
 function svgIcon(name, cls) {
@@ -79,7 +81,6 @@ const textNode = (text, cls) => {
   return el;
 };
 
-/** عدد فارسی برای نمایش (منطق/داده دست‌نخورده می‌ماند) */
 const fa = (n) => Number(n || 0).toLocaleString('fa-IR');
 
 /** دکمهٔ در حال انجام: غیرفعال + اسپینر داخلی + برچسب */
@@ -104,10 +105,34 @@ function setLoading(btn, on, label) {
   }
 }
 
+let toastTimer;
+function toast(msg, kind = '') {
+  const t = $('toast');
+  if (!t) return;
+  const icon = kind === 'ok' ? 'check-circle' : kind === 'err' ? 'x-circle' : 'info';
+  t.replaceChildren(svgIcon(icon), textNode(msg));
+  t.className = `toast ${kind}`;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3600);
+}
+
+async function send(action, payload = {}) {
+  const res = await chrome.runtime.sendMessage({ action, ...payload });
+  if (!res) throw new Error('ارتباط با سرویس افزونه قطع شد. پنجره را دوباره باز کنید.');
+  if (!res.ok) {
+    const err = new Error(res.error || 'خطای ناشناخته');
+    err.needsKey = res.needsKey === true;
+    throw err;
+  }
+  return res;
+}
+
 // ───────────────────────── تم (روشن/تیره/سیستم) ─────────────────────────
 const THEME_KEY = 'kharidar-theme';
 const THEME_NAMES = { light: 'روشن', dark: 'تیره', system: 'سیستم' };
-const mq = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+const mq = typeof window !== 'undefined' && window.matchMedia
+  ? window.matchMedia('(prefers-color-scheme: dark)') : null;
 
 function themePref() {
   try {
@@ -130,49 +155,210 @@ if (mq && mq.addEventListener) {
   mq.addEventListener('change', () => { if (themePref() === 'system') applyTheme('system'); });
 }
 
-
+// ───────────────────────── صفحه‌ها ─────────────────────────
 const screens = {
   welcome: $('screen-welcome'),
   setup: $('screen-setup'),
-  unlock: $('screen-unlock'),
+  extract: $('screen-extract'),
   chat: $('screen-chat'),
+  unlock: $('screen-unlock'),
   error: $('screen-error'),
 };
 
 function showScreen(name) {
-  Object.entries(screens).forEach(([k, el]) => { el.hidden = k !== name; });
+  Object.entries(screens).forEach(([k, el]) => { if (el) el.hidden = k !== name; });
   $('main-actions').hidden = name !== 'chat';
-  setMainActionsVisible(name === 'chat');
+  $('crypto-banner').hidden = !(name === 'chat' && state.cryptoBroken);
 }
-
-function setMainActionsVisible(v) { $('main-actions').hidden = !v; }
 
 function setStatus(text, kind = '') {
   $('status-text').textContent = text;
   const dot = document.querySelector('#status-line .dot');
-  dot.className = `dot ${kind}`;
+  if (dot) dot.className = `dot ${kind}`;
 }
 
-let toastTimer;
-function toast(msg, kind = '') {
-  const t = $('toast');
-  const icon = kind === 'ok' ? 'check-circle' : kind === 'err' ? 'x-circle' : 'info';
-  t.replaceChildren(svgIcon(icon), textNode(msg));
-  t.className = `toast ${kind}`;
-  t.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 3200);
+let state = { cryptoBroken: false };
+
+// ───────────────────────── مسیریابی ─────────────────────────
+async function route() {
+  try {
+    state = await send('get_state');
+    if (state.cryptoBroken) {
+      $('crypto-banner').hidden = false;
+    }
+    if (!state.consent) { showScreen('welcome'); return; }
+    if (!state.setupDone) { initSetupScreen(); showScreen('setup'); return; }
+    if (state.cryptoMode === 'passphrase' && !state.unlocked) {
+      // قفلِ اختیاری: پیش‌فرض هیچ‌وقت اینجا نمی‌رسد و کاربر می‌تواند رد کند
+      showScreen('unlock');
+      return;
+    }
+    await enterChat(state);
+  } catch (e) {
+    showError(e.message);
+  }
 }
 
-async function send(action, payload = {}) {
-  const res = await chrome.runtime.sendMessage({ action, ...payload });
-  if (!res) throw new Error('ارتباط با سرویس افزونه قطع شد. پنجره را دوباره باز کنید.');
-  if (!res.ok) throw new Error(res.error || 'خطای ناشناخته');
-  return res;
+function showError(msg) {
+  $('error-msg').textContent = msg;
+  showScreen('error');
 }
+
+// ───────────────────────── خوش‌آمد / رضایت ─────────────────────────
+$('consent-check').addEventListener('change', (e) => {
+  $('btn-accept-consent').disabled = !e.target.checked;
+});
+
+$('btn-accept-consent').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  setLoading(btn, true, 'در حال آماده‌سازی…');
+  try {
+    const res = await send('accept_consent');
+    if (Array.isArray(res.seeded) && res.seeded.length) {
+      toast('پیکربندی رمزنگاری و ذخیره شد', 'ok');
+    }
+    initSetupScreen();
+    showScreen('setup');
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+function initSetupScreen() {
+  if (state?.settings?.deviceLabel) $('setup-device').value = state.settings.deviceLabel;
+  if (state?.settings?.historyDays) $('setup-days').value = String(state.settings.historyDays);
+}
+
+// ───────────────────────── لودینگ مرحله‌ایِ استخراج ─────────────────────────
+const EXTRACT_STEPS = [
+  { icon: 'database', label: 'خواندن تاریخچهٔ مرور و کوکی‌های امن' },
+  { icon: 'shield', label: 'حذف دامنه‌ها و عبارت‌های حساس' },
+  { icon: 'cpu', label: 'دسته‌بندی محلی — بدون مصرف توکن' },
+  { icon: 'chart', label: 'ساخت اسنپ‌شات پاکسازی‌شده' },
+  { icon: 'telegram', label: 'ارسال خودکار به ربات تلگرام' },
+];
+
+function renderExtractSteps(activeIndex, failIndex = -1) {
+  const ol = $('extract-steps');
+  ol.textContent = '';
+  EXTRACT_STEPS.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.className = 'steps__item'
+      + (i < activeIndex ? ' is-done' : '')
+      + (i === activeIndex ? ' is-active' : '')
+      + (i === failIndex ? ' is-failed' : '');
+    const mark = document.createElement('span');
+    mark.className = 'steps__mark';
+    mark.appendChild(svgIcon(i === failIndex ? 'alert' : (i < activeIndex ? 'check' : s.icon)));
+    li.append(mark, textNode(s.label));
+    ol.appendChild(li);
+  });
+}
+
+let stepTimer = null;
+function startStepAnimation() {
+  let i = 0;
+  renderExtractSteps(0);
+  clearInterval(stepTimer);
+  stepTimer = setInterval(() => {
+    if (i < 3) { i += 1; renderExtractSteps(i); }
+  }, 700);
+  return () => { clearInterval(stepTimer); stepTimer = null; };
+}
+
+/** استخراج کامل با نمایش مراحل + ارسال خودکار به تلگرام */
+async function runExtraction({ startChat = true } = {}) {
+  showScreen('extract');
+  setStatus('در حال استخراج امن…', 'warn');
+  $('extract-title').textContent = 'در حال استخراج امن…';
+  const stop = startStepAnimation();
+  try {
+    const res = await send('collect');
+    clearInterval(stepTimer);
+    const tg = res.telegram || {};
+    renderExtractSteps(tg.sent ? 5 : 4, tg.sent || tg.skipped ? -1 : 3);
+
+    if (tg.sent) {
+      setStatus('ارسال به ربات انجام شد', 'ok');
+    } else if (tg.skipped === 'not-configured') {
+      $('extract-title').textContent = 'استخراج انجام شد — ربات تلگرام تنظیم نیست';
+      setStatus('ربات تنظیم نیست', 'warn');
+    } else {
+      $('extract-title').textContent = 'استخراج انجام شد — ارسال به ربات ناموفق';
+      setStatus('ارسال ناموفق', 'warn');
+    }
+
+    await new Promise((r) => setTimeout(r, 450));
+    showScreen('chat');
+    if (tg.sent) toast('خروجی پاکسازی‌شده به ربات تلگرام ارسال شد', 'ok');
+    else if (tg.skipped === 'not-configured') toast('استخراج انجام شد؛ برای ارسال خودکار، ربات را در تنظیمات وارد کنید.', 'info');
+    else toast(`ارسال به تلگرام ناموفق: ${tg.error || 'خطای ناشناخته'}`, 'err');
+
+    if (startChat) await startAssistantChat();
+    return res;
+  } catch (err) {
+    clearInterval(stepTimer);
+    renderExtractSteps(0, 0);
+    $('extract-title').textContent = 'استخراج ناموفق بود';
+    setStatus('خطا', 'err');
+    toast(err.message, 'err');
+    throw err;
+  } finally {
+    stop();
+  }
+}
+
+/** شروع گفتگو با دستیار (سلامِ اولیه) */
+async function startAssistantChat() {
+  chatBox.textContent = '';
+  setBusy(true);
+  appendTyping();
+  setStatus('در حال گفتگو…', 'warn');
+  try {
+    const started = await send('chat_start');
+    removeTyping();
+    chatBox.textContent = '';
+    const last = started.conversation[started.conversation.length - 1];
+    if (last?.role === 'assistant') renderAssistantMessage(last.content);
+    const s = await send('get_state');
+    state = s;
+    renderSnapshotBar(s);
+    setStatus('متصل', 'ok');
+  } catch (e) {
+    removeTyping();
+    appendTextMessage(e.message, 'error');
+    if (e.needsKey) appendOpenSettingsButton();
+    setStatus('خطا', 'err');
+  } finally {
+    setBusy(false);
+  }
+}
+
+// ───────────────────────── جریانِ تنظیم سریع ─────────────────────────
+$('btn-finish-setup').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  setLoading(btn, true, 'در حال ذخیره…');
+  try {
+    await send('save_settings', {
+      deviceLabel: $('setup-device').value.trim() || 'دستگاه من',
+      historyDays: $('setup-days').value,
+    });
+    await runExtraction({ startChat: true });
+  } catch (err) {
+    toast(err.message, 'err');
+    setLoading(btn, false);
+    showScreen('setup');
+  } finally {
+    setLoading(btn, false);
+  }
+});
 
 // ───────────────────────── رندر امن چت ─────────────────────────
 const chatBox = $('chat-box');
+
+function scrollBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
 
 function appendTextMessage(content, who) {
   if (who === 'error') {
@@ -190,7 +376,6 @@ function appendTextMessage(content, who) {
   scrollBottom();
 }
 
-/** رندر امن متن + لینک (بدون innerHTML) */
 function renderRichText(container, text) {
   container.textContent = '';
   const parts = String(text).split(/(https?:\/\/[^\s\]]+)/g);
@@ -223,17 +408,11 @@ function appendTyping() {
 }
 function removeTyping() { $('typing-indicator')?.remove(); }
 
-function scrollBottom() { chatBox.scrollTop = chatBox.scrollHeight; }
-
 // ─────────── پروتکل [PRODUCT] و [SHOPS] ───────────
 function renderAssistantMessage(rawText) {
   const productRe = /\[PRODUCT\]([\s\S]*?)\[\/PRODUCT\]/g;
   const shopsRe = /\[SHOPS\]([\s\S]*?)\[\/SHOPS\]/g;
-  const withoutProducts = rawText
-    .replace(productRe, '')
-    .replace(shopsRe, '')
-    .trim();
-
+  const withoutProducts = rawText.replace(productRe, '').replace(shopsRe, '').trim();
   if (withoutProducts) appendTextMessage(withoutProducts, 'ai');
 
   let m;
@@ -245,8 +424,7 @@ function renderAssistantMessage(rawText) {
   }
   while ((m = productRe.exec(rawText)) !== null) {
     try {
-      const data = JSON.parse(m[1].trim());
-      appendProductCard(data);
+      appendProductCard(JSON.parse(m[1].trim()));
     } catch { /* JSON خراب — نادیده */ }
   }
 }
@@ -264,11 +442,8 @@ function appendProductCard(data) {
       if (u.protocol === 'https:' || u.protocol === 'http:') imageUrl = u.href;
     } catch { /* نامعتبر */ }
   }
-  if (imageUrl) {
-    img.style.backgroundImage = `url("${imageUrl.replace(/"/g, '%22')}")`;
-  } else {
-    img.appendChild(svgIcon('bag'));
-  }
+  if (imageUrl) img.style.backgroundImage = `url("${imageUrl.replace(/"/g, '%22')}")`;
+  else img.appendChild(svgIcon('bag'));
 
   const body = document.createElement('div');
   body.className = 'product-body';
@@ -336,9 +511,19 @@ function appendStoreChips(links) {
   scrollBottom();
 }
 
-// ───────────────────────── وضعیت و مسیریابی ─────────────────────────
-let busy = false;
+/** دکمهٔ «تنظیمات» داخل چت — وقتی کلیدی تنظیم نیست */
+function appendOpenSettingsButton() {
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-secondary btn-sm';
+  btn.appendChild(svgIcon('key'));
+  btn.appendChild(textNode('رفتن به تنظیمات'));
+  btn.addEventListener('click', openSettings);
+  chatBox.appendChild(btn);
+  scrollBottom();
+}
 
+// ───────────────────────── وضعیتِ مشغول بودن ─────────────────────────
+let busy = false;
 const sendBtn = $('btn-send');
 
 function setBusy(b) {
@@ -354,249 +539,57 @@ function setBusy(b) {
   }
 }
 
-function showError(msg) {
-  $('error-msg').textContent = msg;
-  showScreen('error');
-}
-
-async function route() {
-  try {
-    const state = await send('get_state');
-    if (!state.consent) { showScreen('welcome'); return; }
-    if (!state.setupDone) { initSetupScreen(); showScreen('setup'); return; }
-    if (state.hasSealedSecrets && !state.unlocked) {
-      // قفل بسته است اما می‌توان بدون آن چت کرد؛ فقط عملیات تلگرام رمز می‌خواهد
-      showScreen('unlock');
-      $('unlock-pass').focus();
-      return;
-    }
-    await enterChat(state);
-  } catch (e) {
-    showError(e.message);
-  }
-}
-
-// ───────────────────────── خوش‌آمد / رضایت ─────────────────────────
-$('consent-check').addEventListener('change', (e) => {
-  $('btn-accept-consent').disabled = !e.target.checked;
-});
-$('btn-accept-consent').addEventListener('click', async () => {
-  try {
-    await send('accept_consent');
-    initSetupScreen();
-    showScreen('setup');
-  } catch (e) { toast(e.message, 'err'); }
-});
-
-function initSetupScreen() { /* تنظیم سریع: فیلد ثابت است */ }
-
-document.querySelectorAll('[data-eye]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    const input = $(btn.dataset.eye);
-    const show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    btn.replaceChildren(svgIcon(show ? 'eye-off' : 'eye'));
-    btn.setAttribute('aria-label', show ? 'پنهان کردن رمز' : 'نمایش رمز');
-  });
-});
-
-// کلید تم: روشن / تیره / سیستم — با ذخیره‌سازی و هم‌گام با تنظیمات سیستم
-document.querySelectorAll('[data-theme-set]').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    setTheme(btn.dataset.themeSet);
-    toast(`تم ${THEME_NAMES[btn.dataset.themeSet]} فعال شد`, 'info');
-  });
-});
-applyTheme();
-
-$('btn-finish-setup').addEventListener('click', async () => {
-  const pass = $('setup-pass') ? $('setup-pass').value : '';
-  const tgToken = $('setup-tg-token').value.trim();
-  const tgChat = $('setup-tg-chat').value.trim();
-
-  if (tgToken && !tgChat) return toast('شناسه عددی ادمین را وارد کنید.', 'err');
-  if ((tgToken || pass) && pass && pass.length < 6) return toast('رمز رمزنگاری باید حداقل ۶ کاراکتر باشد.', 'err');
-  if (tgToken && !pass) return toast('برای رمز شدن اطلاعات ربات، رمز رمزنگاری لازم است.', 'err');
-
-  const btn = $('btn-finish-setup');
-  setLoading(btn, true, 'در حال ذخیره…');
-  try {
-    await send('save_settings', {
-      passphrase: pass || undefined,
-      deviceLabel: $('setup-device').value.trim() || 'دستگاه من',
-      tgEnabled: Boolean(tgToken && tgChat),
-      tgToken: tgToken || undefined,
-      tgChatId: tgChat || undefined,
-    });
-    try { await send('accept_consent'); } catch { /* noop */ }
-    toast('آماده شد', 'ok');
-    if (tgToken && tgChat) {
-      try { await send('test_telegram'); toast('پیام تست به تلگرام ارسال شد', 'ok'); } catch (e) { toast(`تست تلگرام: ${e.message}`, 'err'); }
-    }
-    // پس از پیکربندی باید وارد صفحهٔ گفتگو شویم (وگرنه کاربر روی همان تنظیم می‌ماند)
-    showScreen('chat');
-    await startFreshAnalysis();
-  } catch (e) {
-    toast(e.message, 'err');
-  } finally {
-    setLoading(btn, false);
-  }
-});
-
-// ───────────────────────── باز کردن قفل ─────────────────────────
-$('btn-unlock').addEventListener('click', async () => {
-  const pass = $('unlock-pass').value;
-  if (!pass) return toast('رمز را وارد کنید.', 'err');
-  const btn = $('btn-unlock');
-  setLoading(btn, true, 'در حال باز کردن…');
-  try {
-    await send('unlock', { passphrase: pass });
-    toast('قفل باز شد', 'ok');
-    await route();
-  } catch (e) {
-    toast(e.message, 'err');
-  } finally {
-    setLoading(btn, false);
-  }
-});
-
-// رد کردن: چت نیازی به قفل ندارد (قفل فقط برای رازهای تلگرام است)
-const skipBtn = document.createElement('button');
-skipBtn.className = 'btn btn-ghost btn-block';
-skipBtn.textContent = 'فعلاً نه — فقط چت';
-skipBtn.addEventListener('click', async () => {
-  const state = await send('get_state');
-  await enterChat(state);
-});
-$('screen-unlock').appendChild(skipBtn);
-$('unlock-pass').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') $('btn-unlock').click();
-});
-
-// ───────────────────────── چت ─────────────────────────
-async function enterChat(state) {
+// ───────────────────────── ورود به چت ─────────────────────────
+async function enterChat(s) {
   showScreen('chat');
   setStatus('متصل', 'ok');
-  renderSnapshotBar(state);
+  renderSnapshotBar(s);
 
-  const conversation = state.chatLength > 0 ? (await send('get_chat')).conversation : null;
-  if (conversation && conversation.length > 0) {
-    chatBox.textContent = '';
-    for (const msg of conversation) {
-      if (msg.role === 'user') appendTextMessage(msg.content, 'user');
-      else if (msg.role === 'assistant') renderAssistantMessage(msg.content);
+  if (s.chatLength > 0) {
+    const { conversation } = await send('get_chat');
+    if (conversation && conversation.length) {
+      chatBox.textContent = '';
+      for (const msg of conversation) {
+        if (msg.role === 'user') appendTextMessage(msg.content, 'user');
+        else if (msg.role === 'assistant') renderAssistantMessage(msg.content);
+      }
+      return;
     }
-    return;
   }
 
-  if (!state.hasSnapshot) {
-    appendHeroCard();
+  if (!s.hasSnapshot) {
+    // اولین ورود: مستقیم به لودینگ مرحله‌ای استخراج می‌رویم
+    await runExtraction({ startChat: true });
   } else {
-    await startFreshAnalysis();
+    chatBox.textContent = '';
+    appendHeroCard();
   }
 }
 
 function appendHeroCard() {
   const div = document.createElement('div');
   div.className = 'message msg-ai';
-  div.textContent = 'سلام! من خریدار پرو هستم. برای شناخت سلیقهٔ شما، اول یک تحلیل امن و محلی از مرور اخیرتان انجام می‌دهم — بدون هیچ مقدار کوکی و بدون داده حساس.';
+  div.textContent = 'سلام! من خریدار پرو هستم. برای شناخت سلیقهٔ شما، یک تحلیل امن و محلی از مرور اخیرتان انجام می‌دهم — بدون هیچ مقدار کوکی و بدون داده حساس.';
   const btn = document.createElement('button');
   btn.className = 'btn btn-primary btn-sm';
   btn.appendChild(svgIcon('sparkles'));
   btn.appendChild(textNode('شروع تحلیل سلیقهٔ من'));
-  btn.addEventListener('click', () => startFreshAnalysis());
+  btn.addEventListener('click', () => runExtraction({ startChat: true }).catch(() => {}));
   div.appendChild(btn);
   chatBox.appendChild(div);
   scrollBottom();
 }
 
-// ─────────── حالت بارگذاری تحلیل (مرحله‌ای، متن واقعی) ───────────
-const LOADER_STEPS = [
-  { icon: 'database', label: 'خواندن تاریخچهٔ مرور و کوکی‌های امن' },
-  { icon: 'shield', label: 'حذف دامنه‌ها و عبارت‌های حساس' },
-  { icon: 'cpu', label: 'دسته‌بندی محلی — بدون مصرف توکن' },
-];
-
-function markLoaderSteps(active) {
-  document.querySelectorAll('#chat-loader .cl-step').forEach((row, i) => {
-    row.classList.toggle('is-done', i < active);
-    row.classList.toggle('is-active', i === active);
-  });
-}
-
-function appendLoader() {
-  const box = document.createElement('div');
-  box.className = 'chat-loader';
-  box.id = 'chat-loader';
-
-  const title = document.createElement('div');
-  title.className = 'chat-loader__title';
-  const sp = document.createElement('span');
-  sp.className = 'spinner';
-  title.append(sp, textNode('تحلیل امن در حال اجراست…'));
-  box.appendChild(title);
-
-  const skeleton = document.createElement('div');
-  skeleton.className = 'skeleton sk-line sk-line--lg sk-line--w60';
-  box.appendChild(skeleton);
-
-  const steps = document.createElement('div');
-  steps.className = 'chat-loader__steps';
-  LOADER_STEPS.forEach((s, i) => {
-    const row = document.createElement('div');
-    row.className = `cl-step${i === 0 ? ' is-active' : ''}`;
-    const mark = document.createElement('span');
-    mark.className = 'cl-step__mark';
-    mark.appendChild(svgIcon(s.icon));
-    row.append(mark, textNode(s.label));
-    steps.appendChild(row);
-  });
-  box.appendChild(steps);
-
-  chatBox.appendChild(box);
-  scrollBottom();
-
-  const timers = [setTimeout(() => markLoaderSteps(1), 1100), setTimeout(() => markLoaderSteps(2), 2400)];
-  return () => timers.forEach(clearTimeout);
-}
-
-function removeLoader() { $('chat-loader')?.remove(); }
-
-async function startFreshAnalysis() {
-  if (busy) return;
-  setBusy(true);
-  chatBox.textContent = '';
-  const stopLoader = appendLoader();
-  setStatus('در حال تحلیل امن…', 'warn');
-  try {
-    await send('collect');
-    const started = await send('chat_start');
-    removeLoader();
-    chatBox.textContent = '';
-    const last = started.conversation[started.conversation.length - 1];
-    if (last?.role === 'assistant') renderAssistantMessage(last.content);
-    const state = await send('get_state');
-    renderSnapshotBar(state);
-    setStatus('متصل', 'ok');
-  } catch (e) {
-    stopLoader();
-    removeLoader();
-    appendTextMessage(`خطا: ${e.message}`, 'error');
-    setStatus('خطا', 'err');
-  } finally {
-    setBusy(false);
-  }
-}
-
-function renderSnapshotBar(state) {
+function renderSnapshotBar(s) {
   const bar = $('snapshot-bar');
-  if (!state.hasSnapshot || !state.snapshotStats) { bar.hidden = true; return; }
-  const s = state.snapshotStats;
+  if (!bar) return;
+  if (!s.hasSnapshot || !s.snapshotStats) { bar.hidden = true; return; }
+  const st = s.snapshotStats;
   const wrap = $('snapshot-summary');
   const parts = [
-    ['globe', `${fa(s.domains)} دامنه`],
-    ['search', `${fa(s.searches)} جستجو`],
-    ['shield', `${fa(s.cookies)} کوکی بی‌مقدار`],
+    ['globe', `${fa(st.domains)} دامنه`],
+    ['search', `${fa(st.searches)} جستجو`],
+    ['shield', `${fa(st.cookies)} کوکی بی‌مقدار`],
   ];
   wrap.replaceChildren();
   for (const [name, label] of parts) {
@@ -609,12 +602,17 @@ function renderSnapshotBar(state) {
   bar.hidden = false;
 }
 
-$('btn-recollect').addEventListener('click', () => startFreshAnalysis());
+$('btn-recollect').addEventListener('click', () => {
+  runExtraction({ startChat: true }).catch(() => {});
+});
+
 $('btn-new-chat').addEventListener('click', async () => {
   try {
     await send('chat_reset');
-    await startFreshAnalysis();
-  } catch (e) { toast(e.message, 'err'); }
+    await runExtraction({ startChat: true });
+  } catch (e) {
+    toast(e.message, 'err');
+  }
 });
 
 // ───────────────────────── ارسال پیام ─────────────────────────
@@ -641,18 +639,16 @@ async function sendChat() {
   } catch (e) {
     removeTyping();
     appendTextMessage(e.message, 'error');
+    if (e.needsKey) appendOpenSettingsButton();
   } finally {
     setBusy(false);
     userInput.focus();
   }
 }
 
-$('btn-send').addEventListener('click', sendChat);
+sendBtn.addEventListener('click', sendChat);
 userInput.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendChat();
-  }
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
 });
 userInput.addEventListener('input', autoSize);
 
@@ -668,21 +664,51 @@ $('btn-quick-search').addEventListener('click', () => {
 // ───────────────────────── مودال تنظیمات ─────────────────────────
 const modal = $('modal-settings');
 
-function openSettings() {
-  send('get_settings_masked').then((res) => {
-    $('set-device').value = res.settings.deviceLabel;
-    $('set-days').value = String(res.settings.historyDays);
-    $('set-tg-enabled').checked = Boolean(res.settings.tgEnabled);
-    $('set-tg-mask').textContent = res.settings.tgEnabled ? '(تنظیم و رمزنگاری‌شده)' : '(تنظیم نشده)';
-  }).catch((e) => toast(e.message, 'err'));
-  renderPrivacyPane();
-  applyTheme();
-  modal.hidden = false;
+function fillModelSelect(models, selected) {
+  const sel = $('set-model');
+  sel.textContent = '';
+  const list = (models && models.length) ? models : KNOWN_MODELS.map((m) => ({ id: m.id, label: m.label }));
+  for (const m of list) {
+    const opt = document.createElement('option');
+    opt.value = m.id;
+    opt.textContent = m.label || m.id;
+    sel.appendChild(opt);
+  }
+  const customOpt = document.createElement('option');
+  customOpt.value = 'custom';
+  customOpt.textContent = 'مدل سفارشی…';
+  sel.appendChild(customOpt);
+
+  const known = list.some((m) => m.id === selected);
+  sel.value = known ? selected : 'custom';
+  const custom = $('set-model-custom');
+  custom.hidden = known;
+  if (!known) custom.value = selected || '';
 }
 
-function closeModals() {
-  modal.hidden = true;
+async function openSettings() {
+  modal.hidden = false;
+  try {
+    const res = await send('get_settings_masked');
+    const s = res.settings || {};
+    $('set-device').value = s.deviceLabel || 'دستگاه من';
+    $('set-days').value = String(s.historyDays || 30);
+    $('set-tg-chat').value = (res.secrets?.tgChatId) || '';
+    $('set-tg-mask').textContent = res.secrets?.tgTokenMask
+      ? `(ذخیره‌شده: ${res.secrets.tgTokenMask})` : '(تنظیم نشده)';
+    $('ai-key-state').textContent = res.secrets?.aiKeyMask
+      ? `(ذخیره‌شده: ${res.secrets.aiKeyMask})` : '(تنظیم نشده)';
+    $('set-ai-key').value = '';
+    $('set-tg-token').value = '';
+    fillModelSelect(KNOWN_MODELS.map((m) => ({ id: m.id, label: m.label })), s.model);
+    applyTheme(s.theme || 'system');
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+  renderPrivacyPane();
 }
+
+function closeModals() { modal.hidden = true; }
 
 document.querySelectorAll('[data-close]').forEach((btn) =>
   btn.addEventListener('click', closeModals));
@@ -694,40 +720,99 @@ document.querySelectorAll('.tab').forEach((tab) => {
     document.querySelectorAll('.tab').forEach((t) => t.classList.remove('active'));
     document.querySelectorAll('.tab-pane').forEach((p) => p.classList.remove('active'));
     tab.classList.add('active');
-    $(tab.dataset.tab).classList.add('active');
+    const pane = $(tab.dataset.tab);
+    if (pane) pane.classList.add('active');
   });
 });
 
-$('btn-save-ai').addEventListener('click', async (e) => {
-  const btn = e.currentTarget;
-  setLoading(btn, true, 'ذخیره…');
-  try {
-    await send('save_settings', {
-      deviceLabel: $('set-device').value.trim(),
-      historyDays: $('set-days').value,
-    });
-    toast('تنظیمات ذخیره شد', 'ok');
-    openSettings();
-  } catch (err) { toast(err.message, 'err'); }
-  finally { setLoading(btn, false); }
+document.querySelectorAll('[data-theme-set]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    setTheme(btn.dataset.themeSet);
+    toast(`تم ${THEME_NAMES[btn.dataset.themeSet]} فعال شد`, 'info');
+  });
 });
 
-$('btn-save-tg').addEventListener('click', async (e) => {
+document.querySelectorAll('[data-eye]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const input = $(btn.dataset.eye);
+    if (!input) return;
+    const show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.replaceChildren(svgIcon(show ? 'eye-off' : 'eye'));
+    btn.setAttribute('aria-label', show ? 'پنهان کردن مقدار' : 'نمایش مقدار');
+  });
+});
+
+$('set-model').addEventListener('change', () => {
+  const custom = $('set-model-custom');
+  custom.hidden = $('set-model').value !== 'custom';
+  if (!custom.hidden) custom.focus();
+});
+
+function currentModelValue() {
+  const sel = $('set-model');
+  if (!sel) return '';
+  return sel.value === 'custom'
+    ? ($('set-model-custom')?.value || '').trim()
+    : sel.value;
+}
+
+/** ذخیرهٔ یکجای همهٔ تنظیمات (دکمهٔ چسبانِ فوتر مودال) */
+$('btn-save-all').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
-  const token = $('set-tg-token').value.trim();
-  const chat = $('set-tg-chat').value.trim();
-  setLoading(btn, true, 'ذخیره…');
+  setLoading(btn, true, 'در حال ذخیره…');
   try {
-    await send('save_settings', {
-      tgEnabled: $('set-tg-enabled').checked,
-      tgToken: token || undefined,
-      tgChatId: chat || undefined,
-    });
-    toast('اطلاعات ربات رمزنگاری و ذخیره شد', 'ok');
+    const payload = {
+      deviceLabel: $('set-device').value.trim() || 'دستگاه من',
+      historyDays: $('set-days').value,
+      theme: themePref(),
+      model: currentModelValue(),
+      tgToken: $('set-tg-token').value.trim() || undefined,
+      tgChatId: $('set-tg-chat').value.trim() || undefined,
+      avalaiKey: $('set-ai-key').value.trim() || undefined,
+    };
+    if (payload.model === 'custom') payload.model = '';
+    const res = await send('save_settings', payload);
+    const saved = res.saved || [];
+    $('set-ai-key').value = '';
     $('set-tg-token').value = '';
-    openSettings();
-  } catch (err) { toast(err.message, 'err'); }
-  finally { setLoading(btn, false); }
+    toast(saved.length ? `تنظیمات ذخیره شد (${saved.length} راز رمزنگاری شد)` : 'تنظیمات ذخیره شد', 'ok');
+    await openSettings();
+    state = await send('get_state');
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+$('btn-test-ai').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  setLoading(btn, true, 'در حال تست…');
+  try {
+    const res = await send('test_ai');
+    toast(res.via === 'direct' ? 'اتصال به AvalAI برقرار است' : 'اتصال از طریق پروکسی پنل برقرار است', 'ok');
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+$('btn-fetch-models').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  setLoading(btn, true, 'در حال دریافت…');
+  try {
+    const res = await send('fetch_models');
+    const models = res.models || [];
+    fillModelSelect(models, currentModelValue());
+    const src = res.source === 'static' ? 'فهرست ایستا (دسترسی به AvalAI نبود)' : 'فهرست زندهٔ AvalAI';
+    toast(`${src} — ${models.length} مدل`, models.length ? 'ok' : 'info');
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
 });
 
 $('btn-test-tg').addEventListener('click', async (e) => {
@@ -735,9 +820,12 @@ $('btn-test-tg').addEventListener('click', async (e) => {
   setLoading(btn, true, 'در حال ارسال…');
   try {
     await send('test_telegram');
-    toast('پیام تست ارسال شد', 'ok');
-  } catch (err) { toast(err.message, 'err'); }
-  finally { setLoading(btn, false); }
+    toast('پیام تست به تلگرام ارسال شد', 'ok');
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
 });
 
 $('btn-export-json').addEventListener('click', async (e) => {
@@ -748,14 +836,16 @@ $('btn-export-json').addEventListener('click', async (e) => {
     const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const stamp = new Date().toISOString().slice(0, 10);
     a.href = url;
-    a.download = `browsing-profile_${stamp}.json`;
+    a.download = `browsing-profile_${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
     toast('فایل خروجی دانلود شد', 'ok');
-  } catch (err) { toast(err.message, 'err'); }
-  finally { setLoading(btn, false); }
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
 });
 
 $('btn-send-tg-export').addEventListener('click', async (e) => {
@@ -764,13 +854,16 @@ $('btn-send-tg-export').addEventListener('click', async (e) => {
   try {
     await send('telegram_send_snapshot');
     toast('خروجی به تلگرام ارسال شد', 'ok');
-  } catch (err) { toast(err.message, 'err'); }
-  finally { setLoading(btn, false); }
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
 });
 
 $('btn-clear-data').addEventListener('click', async (e) => {
-  if (!confirm('همه داده‌های ذخیره‌شده (اسنپ‌شات تحلیل و مکالمه) حذف شود؟')) return;
   const btn = e.currentTarget;
+  if (typeof window.confirm === 'function' && !window.confirm('همه داده‌های ذخیره‌شده (اسنپ‌شات تحلیل و مکالمه) حذف شود؟')) return;
   setLoading(btn, true, 'در حال حذف…');
   try {
     await send('clear_all');
@@ -778,31 +871,54 @@ $('btn-clear-data').addEventListener('click', async (e) => {
     toast('همه داده‌ها حذف شد', 'ok');
     closeModals();
     chatBox.textContent = '';
+    showScreen('chat');
     appendHeroCard();
-  } catch (err) { toast(err.message, 'err'); }
-  finally { setLoading(btn, false); }
+    state = await send('get_state');
+    renderSnapshotBar(state);
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
 });
 
-$('btn-lock').addEventListener('click', async (e) => {
+$('btn-save-passphrase').addEventListener('click', async (e) => {
   const btn = e.currentTarget;
-  setLoading(btn, true, 'در حال قفل…');
+  const pass = $('set-passphrase').value;
+  if (!pass || pass.length < 6) return toast('رمز باید حداقل ۶ کاراکتر باشد.', 'err');
+  setLoading(btn, true, 'در حال اعمال…');
   try {
-    await send('lock');
-    toast('رازها قفل شدند', 'ok');
-    closeModals();
-    showScreen('unlock');
-  } catch (err) { toast(err.message, 'err'); }
-  finally { setLoading(btn, false); }
+    await send('setup_passphrase', { passphrase: pass });
+    $('set-passphrase').value = '';
+    toast('قفلِ اختیاری فعال شد', 'ok');
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+$('btn-disable-passphrase').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  setLoading(btn, true, 'در حال غیرفعال‌سازی…');
+  try {
+    await send('disable_passphrase');
+    toast('قفل غیرفعال شد — مسیر بدون رمز برقرار است', 'ok');
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
 });
 
 function renderPrivacyPane() {
-  send('get_state').then((state) => {
+  send('get_state').then((s) => {
     const ps = $('privacy-summary');
     ps.textContent = '';
     const items = [
-      [fa(state.snapshotStats?.domains ?? 0), 'دامنهٔ امن ذخیره‌شده'],
-      [fa(state.snapshotStats?.searches ?? 0), 'جستجوی پاکسازی‌شده'],
-      [fa(state.snapshotStats?.cookies ?? 0), 'کوکی بی‌مقدار'],
+      [fa(s.snapshotStats?.domains ?? 0), 'دامنهٔ امن ذخیره‌شده'],
+      [fa(s.snapshotStats?.searches ?? 0), 'جستجوی پاکسازی‌شده'],
+      [fa(s.snapshotStats?.cookies ?? 0), 'کوکی بی‌مقدار'],
       ['۰', 'مقدار حساس ذخیره‌شده'],
     ];
     for (const [v, label] of items) {
@@ -818,20 +934,74 @@ function renderPrivacyPane() {
       'دامنه‌های بانکی، پیام‌رسان، ایمیل، هویتی و محتوای جنسی حذف می‌شوند.',
       'URL کامل و عنوان صفحات ذخیره نمی‌شوند — فقط دامنه و تعداد بازدید.',
       'جستجوها نرمال و از تکرار پاک می‌شوند؛ عبارات نامناسب حذف می‌گردند.',
-      'کلید AvalAI، توکن ربات و شناسه ادمین با AES-256-GCM رمزنگاری می‌شوند.',
+      'توکن ربات، شناسه ادمین و کلید AvalAI در همین دستگاه با AES-256-GCM رمزنگاری می‌شوند.',
       'هیچ رازی در لاگ‌ها نوشته نمی‌شود (لاگر خودکار پاک‌کننده دارد).',
+      'کلیک روی «موافقم و ادامه» همان اقدام صریح شماست؛ پس از آن، خروجی پاکسازی‌شده پس از هر استخراج به‌طور خودکار به ربات تلگرامِ خودتان فرستاده می‌شود.',
+      'اگر کلید AvalAI داخل افزونه قرار گیرد (پیکربندی مالک)، برای نصب‌کنندگان قابل استخراج است — برای انتشار عمومی، پروکسی پنل امن‌تر است.',
     ];
     for (const g of guarantees) {
       const li = document.createElement('li');
       li.textContent = g;
       $('privacy-list').appendChild(li);
     }
-  }).catch(() => {});
+  }).catch(() => { /* بی‌صدا — این پن فقط گزارش است */ });
 }
 
 $('btn-settings').addEventListener('click', openSettings);
 $('btn-retry').addEventListener('click', route);
 
+// ───────────────────────── بازنشانی رمزنگاری ─────────────────────────
+$('btn-reset-crypto').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  setLoading(btn, true, 'در حال بازنشانی…');
+  try {
+    await send('reset_crypto');
+    $('crypto-banner').hidden = true;
+    toast('رمزنگاری بازنشانی شد. اطلاعات ربات را دوباره در تنظیمات وارد کنید.', 'ok');
+    state = await send('get_state');
+    if (!state.hasTelegramConfig) openSettings();
+    else await route();
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+// ───────────────────────── قفلِ اختیاری ─────────────────────────
+$('btn-unlock').addEventListener('click', async (e) => {
+  const btn = e.currentTarget;
+  const pass = $('unlock-pass').value;
+  if (!pass) return toast('رمز را وارد کنید.', 'err');
+  setLoading(btn, true, 'در حال باز کردن…');
+  try {
+    await send('unlock', { passphrase: pass });
+    toast('قفل باز شد', 'ok');
+    await route();
+  } catch (err) {
+    toast(err.message, 'err');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+$('btn-skip-unlock').addEventListener('click', async () => {
+  try {
+    state = await send('get_state');
+    await enterChat(state);
+  } catch (e) {
+    toast(e.message, 'err');
+  }
+});
+
+$('unlock-pass').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') $('btn-unlock').click();
+});
+
 // ───────────────────────── شروع ─────────────────────────
+// فهرست مدل‌ها را همان ابتدا با مقادیر ایستا پر می‌کنیم تا select هرگز خالی
+// نماند (دکمهٔ «دریافت فهرست» بعداً آن را از AvalAI به‌روز می‌کند).
+fillModelSelect(KNOWN_MODELS.map((m) => ({ id: m.id, label: m.label })), KNOWN_MODELS[0].id);
+applyTheme();
 document.addEventListener('DOMContentLoaded', route);
 route();

@@ -1170,3 +1170,70 @@ img { max-width: 100%; }
 
 /* حالت صریح کارت بینش (هم‌رنگ با لهجهٔ اصلی) */
 .insight-card--accent .insight-card__icon { color: var(--accent); }
+
+/* ============================================================================
+   افزوده‌های نگارش ۲.۲ — مودال تنظیمات: چشمیِ فیلد راز، فوتر چسبان،
+   اندازهٔ لمسی و ریسپانسیو (بدون تغییر هویت رنگی «کاغذ کاهی و مُس»)
+   ============================================================================ */
+
+/* ── دکمهٔ چشمی داخل فیلد ─────────────────────────────────────────── */
+.field__wrap { position: relative; display: flex; align-items: center; min-width: 0; }
+.field__wrap .field__input { padding-inline-end: 52px; }
+.field__eye {
+  position: absolute; inset-inline-end: 4px;
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center;
+  border-radius: var(--r-1); color: var(--ink-3);
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.field__eye svg { width: 18px; height: 18px; }
+.field__eye:hover { background: var(--surface-2); color: var(--accent-text); }
+
+/* ── ردیفِ کنارِ هم (select + دکمه) ───────────────────────────────── */
+.row--tight { gap: var(--s-2); align-items: stretch; flex-wrap: wrap; }
+.row--tight .select { flex: 1 1 220px; min-width: 0; }
+.row--tight .btn { flex: 0 0 auto; }
+
+/* ── فوترِ چسبان مودال: دکمهٔ ذخیره همیشه دیده می‌شود ─────────────── */
+.modal > .modal-foot {
+  position: sticky; bottom: 0;
+  box-shadow: 0 -6px 18px rgba(64, 48, 26, .07);
+}
+
+/* ============================================================================
+   اندازهٔ لمسی: همهٔ هدف‌های لمسی حداقل ۴۴×۴۴ پیکسل و فاصلهٔ حداقل ۸px
+   ============================================================================ */
+.btn, .btn--sm, .icon-btn, .field__eye, .chip, .tab {
+  min-height: 44px; min-width: 44px;
+}
+.btn--sm { padding: 0 var(--s-4); }
+.btn--icon { width: 44px; min-height: 44px; }
+.field__input, .input, .select, textarea.input { min-height: 44px; }
+.row { gap: var(--s-2); }
+.stack { gap: var(--s-3); }
+.set-section__body { gap: var(--s-3); }
+
+/* جلوگیری از سرریز افقی در عرض‌های کوچک */
+.modal, .modal-body, .field, .set-section, .set-section__body { min-width: 0; max-width: 100%; }
+.field__input, .input, .select, textarea.input { width: 100%; min-width: 0; max-width: 100%; }
+input, select, textarea { max-width: 100%; }
+.modal-head__title, .set-section__head { min-width: 0; overflow-wrap: anywhere; }
+
+/* ── ریسپانسیو: مودال در موبایل به شیتِ پایین تبدیل می‌شود ────────── */
+@media (max-width: 560px) {
+  .modal-backdrop { padding: 0; align-items: flex-end; }
+  .modal {
+    max-width: 100%; max-height: 92vh;
+    border-radius: var(--r-3) var(--r-3) 0 0;
+  }
+  .modal--sm, .modal--lg { max-width: 100%; }
+  .modal-head { padding: var(--s-3) var(--s-4); }
+  .modal-body { padding: var(--s-4); gap: var(--s-3); }
+  .modal-foot { padding: var(--s-3) var(--s-4); }
+  .row--tight .btn { flex: 1 1 100%; }
+}
+
+@media (max-width: 380px) {
+  .modal-body, .modal-head, .modal-foot { padding-inline: var(--s-3); }
+  .set-section__body { gap: var(--s-2); }
+  .hint { line-height: 2; }
+}
