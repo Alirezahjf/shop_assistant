@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ورود — پنل مدیریت</title>
+<link rel="stylesheet" href="/static/admin.css">
+<link rel="icon" href="/static/favicon.png">
+</head>
+<body class="login-body">
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="/static/icon48.png" alt="لوگو">
+    </div>
+    <h1>پنل مدیریت پروفایل‌ها</h1>
+    <p class="login-sub">دستیار خرید هوشمند — فقط برای مدیر سیستم</p>
+
+    {% if error %}
+    <div class="login-error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/login" class="login-form">
+      <div class="field">
+        <label for="password">رمز عبور مدیر</label>
+        <div class="input-wrap">
+          <input type="password" id="password" name="password" autocomplete="current-password" required autofocus>
+          <button type="button" class="eye" data-eye="password">👁</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">ورود به پنل</button>
+    </form>
+
+    <p class="login-hint">🔐 نشست شما با کوکی امن HttpOnly نگه‌داری می‌شود.<br>رمز پیش‌فرض از متغیر <code>ADMIN_PASSWORD</code> در فایل <code>.env</code> تغییر می‌کند.</p>
+  </div>
+</body>
+</html>

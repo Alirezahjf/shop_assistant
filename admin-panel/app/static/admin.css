@@ -518,3 +518,12 @@ body {
 @media print {
   .topbar-actions, .ph-actions, .back-btn { display: none !important; }
 }
+
+/* ─── دکمه تلگرام ─── */
+.btn-telegram {
+  background: #229ED9; color: #fff; box-shadow: 0 4px 14px -4px rgba(34, 158, 217, 0.5);
+}
+.btn-telegram:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-telegram svg { width: 16px; height: 16px; }
+.tg-status { font-size: 11px; color: var(--text-2); margin-inline-start: auto; }
+.dz-actions { margin-top: 16px; }

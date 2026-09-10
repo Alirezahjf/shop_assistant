@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 2,
+  "generatedBy": "smart-shopping-assistant",
+  "exportType": "sanitized-browsing-profile",
+  "deviceLabel": "دستگاه نمونه",
+  "createdAt": "2026-09-09T12:00:00.000Z",
+  "rangeDays": 30,
+  "stats": {
+    "domains": 9,
+    "searches": 8,
+    "cookies": 2,
+    "totalVisits": 87
+  },
+  "domains": [
+    {"domain": "digikala.com", "visits": 28, "lastVisit": 1757400000000, "histogram": [2, 3, 4, 5, 5, 4, 5]},
+    {"domain": "torob.com", "visits": 14, "lastVisit": 1757300000000, "histogram": [1, 2, 2, 3, 2, 2, 2]},
+    {"domain": "zoomit.ir", "visits": 12, "lastVisit": 1757200000000, "histogram": [1, 2, 2, 2, 2, 2, 1]},
+    {"domain": "youtube.com", "visits": 11, "lastVisit": 1757450000000, "histogram": [0, 1, 2, 2, 2, 2, 2]},
+    {"domain": "chatgpt.com", "visits": 8, "lastVisit": 1757440000000, "histogram": [0, 1, 1, 2, 1, 2, 1]},
+    {"domain": "github.com", "visits": 6, "lastVisit": 1757000000000, "histogram": [2, 1, 1, 1, 1, 0, 0]},
+    {"domain": "filimo.com", "visits": 4, "lastVisit": 1756900000000, "histogram": [1, 1, 0, 1, 0, 1, 0]},
+    {"domain": "basalam.com", "visits": 3, "lastVisit": 1756800000000, "histogram": [0, 1, 0, 1, 0, 1, 0]},
+    {"domain": "wikipedia.org", "visits": 1, "lastVisit": 1756000000000, "histogram": [1, 0, 0, 0, 0, 0, 0]}
+  ],
+  "searches": [
+    {"term": "خرید کفش", "count": 6, "lastSeen": 1757400000000, "engine": "google.com"},
+    {"term": "گوشی سامسونگ قیمت", "count": 4, "lastSeen": 1757350000000, "engine": "google.com"},
+    {"term": "هودی مردانه", "count": 3, "lastSeen": 1757300000000, "engine": "digikala.com"},
+    {"term": "آموزش پایتون", "count": 3, "lastSeen": 1757200000000, "engine": "google.com"},
+    {"term": "ساعت هوشمند", "count": 2, "lastSeen": 1757100000000, "engine": "google.com"},
+    {"term": "بهترین لپ تاپ برای برنامه نویسی", "count": 2, "lastSeen": 1757000000000, "engine": "google.com"},
+    {"term": "بینویز", "count": 1, "lastSeen": 1756900000000, "engine": "google.com"},
+    {"term": "قیمت کفش ورزشی", "count": 1, "lastSeen": 1756800000000, "engine": "google.com"}
+  ],
+  "cookies": [
+    {"domain": "digikala.com", "name": "ab_test_variant"},
+    {"domain": "zoomit.ir", "name": "newsletter_seen"}
+  ],
+  "privacy": {
+    "cookieValuesCollected": false,
+    "pageTitlesCollected": false,
+    "fullUrlsCollected": false,
+    "sensitiveDomainsCompletelyRemoved": true,
+    "rawHistoryStored": false
+  }
+}

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ app_name }}</title>
+<link rel="stylesheet" href="/static/admin.css">
+<link rel="icon" href="/static/favicon.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img src="/static/icon48.png" alt="لوگو" class="brand-logo">
+      <div>
+        <h1>پنل مدیریت پروفایل‌ها</h1>
+        <span class="brand-sub">بانک اطلاعاتی پروفایل‌های مرور پاکسازی‌شده — فقط مدیر</span>
+      </div>
+    </div>
+    <div class="topbar-stats" id="topbar-stats" hidden>
+      <div class="ts-item"><b id="ts-profiles">۰</b><span>پروفایل</span></div>
+      <div class="ts-item"><b id="ts-domains">۰</b><span>دامنه</span></div>
+      <div class="ts-item"><b id="ts-searches">۰</b><span>جستجو</span></div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-telegram" id="btn-tg-poll" title="واکشی فایل‌های جدید از ربات تلگرام">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
+        <span>دریافت از تلگرام</span>
+      </button>
+      <label class="btn btn-primary" for="import-file" title="آپلود فایل‌های JSON خروجی افزونه">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+        افزودن کاربر
+      </label>
+      <input type="file" id="import-file" accept=".json,application/json" multiple hidden>
+      <button class="btn btn-ghost" id="btn-settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>تنظیمات</span>
+      </button>
+      <a class="btn btn-ghost" href="/logout" title="خروج از نشست">خروج</a>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <section id="view-list">
+    <div class="list-toolbar">
+      <div class="search-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="search" id="profile-search" placeholder="جستجو در پروفایل‌ها…">
+      </div>
+      <select id="sort-select" class="select-inline">
+        <option value="newest">جدیدترین</option>
+        <option value="oldest">قدیمی‌ترین</option>
+        <option value="name">بر اساس نام</option>
+        <option value="data">بیشترین داده</option>
+      </select>
+      <span class="tg-status" id="tg-status"></span>
+    </div>
+
+    <div class="grid" id="profiles-grid"></div>
+
+    <div class="empty-state" id="empty-state">
+      <div class="dropzone" id="dropzone">
+        <div class="dz-icon">📥</div>
+        <h2>اولین پروفایل را اضافه کنید</h2>
+        <p>فایل‌های JSON خروجی افزونه را اینجا رها کنید<br>یا دکمه <b>«دریافت از تلگرام»</b> را بزنید تا فایل‌هایی که افزونه به ربات فرستاده واکشی شود.</p>
+        <div class="dz-actions">
+          <button class="btn btn-ghost btn-sm" id="btn-import-sample">✨ افزودن پروفایل نمونه</button>
+        </div>
+        <div class="dz-formats"><span>browsing-profile_*.json</span></div>
+      </div>
+      <div class="empty-help">
+        <h3>جریان داده:</h3>
+        <ol>
+          <li>کاربر، افزونه «خریدار پرو» را در کروم نصب و تحلیل می‌گیرد</li>
+          <li>افزونه، فایل <code>browsing-profile_*.json</code> پاکسازی‌شده را به چت ربات تلگرام شما می‌فرستد</li>
+          <li>شما در همین پنل «دریافت از تلگرام» می‌زنید — فایل‌ها اعتبارسنجی مجدد و ایمپورت می‌شوند</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- مودال تنظیمات -->
+<div class="modal-backdrop" id="modal-settings" hidden>
+  <div class="modal">
+    <header class="modal-head">
+      <h3>⚙️ تنظیمات پنل</h3>
+      <button class="icon-btn" data-close="modal-settings">✕</button>
+    </header>
+    <div class="modal-body">
+      <div class="divider"><span>هوش مصنوعی AvalAI</span></div>
+      <div class="field">
+        <label>کلید API <small id="ai-key-state"></small></label>
+        <input type="password" id="set-ai-key" placeholder="sk-…" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>مدل تحلیل</label>
+        <select id="set-model">
+          <option value="qwen3.8-flash">Qwen 3.8 Flash — ارزان و سریع (پیشنهادی)</option>
+          <option value="glm-5.3-flash">GLM 5.3 Flash — ارزان</option>
+          <option value="gemini-flash-latest">Gemini Flash</option>
+          <option value="gpt-6-astra">GPT-6 Astra — قوی‌ترین</option>
+          <option value="claude-fable-5-1">Claude Fable 5.1</option>
+          <option value="custom">مدل سفارشی…</option>
+        </select>
+        <input type="text" id="set-model-custom" placeholder="نام مدل سفارشی" hidden>
+      </div>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" id="btn-test-ai">تست اتصال</button>
+        <button class="btn btn-primary btn-sm" id="btn-save-ai">ذخیره</button>
+      </div>
+
+      <div class="divider"><span>ربات تلگرام (منبع ایمپورت فایل‌ها)</span></div>
+      <div class="field">
+        <label>توکن ربات <small id="tg-state"></small></label>
+        <input type="password" id="set-tg-token" placeholder="123456789:AAF…" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>شناسه عددی چت ادمین</label>
+        <input type="text" id="set-tg-chat" inputmode="numeric" placeholder="8810826597" autocomplete="off">
+      </div>
+      <p class="hint">فقط فایل‌های JSON ارسالی از این چت ایمپورت می‌شوند. رازها با Fernet رمز و در پایگاه‌داده ذخیره می‌شوند و هرگز لاگ نمی‌شوند.</p>
+      <div class="row">
+        <button class="btn btn-ghost btn-sm" id="btn-test-tg">تست ارسال</button>
+        <button class="btn btn-primary btn-sm" id="btn-save-tg">ذخیره</button>
+      </div>
+
+      <div class="divider"><span>امنیت پنل</span></div>
+      <div class="field">
+        <label>تغییر رمز مدیر</label>
+        <input type="password" id="set-pass-current" placeholder="رمز فعلی" autocomplete="current-password">
+        <input type="password" id="set-pass-new" placeholder="رمز جدید (حداقل ۸ کاراکتر)" autocomplete="new-password">
+      </div>
+      <button class="btn btn-ghost btn-sm" id="btn-save-pass">تغییر رمز</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+<div class="drop-overlay" id="drop-overlay" hidden><div>فایل‌ها را رها کنید…</div></div>
+
+<script src="/static/admin.js"></script>
+</body>
+</html>

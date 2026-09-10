@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پروفایل {{ uid }} — پنل مدیریت</title>
+<link rel="stylesheet" href="/static/admin.css">
+<link rel="icon" href="/static/favicon.png">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <img src="/static/icon48.png" alt="لوگو" class="brand-logo">
+      <div>
+        <h1>پنل مدیریت پروفایل‌ها</h1>
+        <span class="brand-sub">نمای تفصیلی پروفایل</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a class="btn btn-ghost" href="/">← همه پروفایل‌ها</a>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+  <section id="view-profile">
+    <div class="profile-head card">
+      <div class="avatar" id="p-avatar">؟</div>
+      <div class="ph-main">
+        <div class="ph-name-row">
+          <h2 id="p-name" contenteditable="true" spellcheck="false" title="برای تغییر نام کلیک کنید"></h2>
+          <span class="ph-id" id="p-uid">{{ uid }}</span>
+        </div>
+        <p class="ph-meta" id="p-meta"></p>
+        <div class="ph-badges" id="p-badges"></div>
+      </div>
+      <div class="ph-actions">
+        <button class="btn btn-primary" id="btn-analyze">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3a6 6 0 0 1 6 6c0 2.2-1.2 3.6-2.3 4.7-.7.7-1.2 1.5-1.4 2.3h-4.6c-.2-.8-.7-1.6-1.4-2.3C7.2 12.6 6 11.2 6 9a6 6 0 0 1 6-6z"/><path d="M9.5 20h5"/><path d="M10.5 22.5h3"/></svg>
+          <span id="btn-analyze-label">تحلیل هوشمند</span>
+        </button>
+        <a class="btn btn-ghost" id="btn-p-export" href="#" title="دانلود JSON">⬇️ JSON</a>
+        <button class="btn btn-ghost" id="btn-p-tg" title="ارسال به ربات تلگرام">📨 تلگرام</button>
+        <button class="btn btn-ghost btn-danger-ghost" id="btn-p-delete" title="حذف پروفایل">🗑</button>
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="insight-grid">
+      <button class="insight-box" id="box-domains">
+        <div class="ib-icon ib-blue">🌐</div>
+        <div class="ib-body"><h3>سایت‌های بازدیدشده</h3><p id="ib-domains-sub">—</p></div>
+        <div class="ib-arrow">‹</div>
+      </button>
+      <button class="insight-box" id="box-searches">
+        <div class="ib-icon ib-green">🔎</div>
+        <div class="ib-body"><h3>جستجوها</h3><p id="ib-searches-sub">—</p></div>
+        <div class="ib-arrow">‹</div>
+      </button>
+      <button class="insight-box" id="box-interests">
+        <div class="ib-icon ib-orange">❤️</div>
+        <div class="ib-body"><h3>علاقه‌مندی‌ها</h3><p id="ib-interests-sub">—</p></div>
+        <div class="ib-arrow">‹</div>
+      </button>
+      <button class="insight-box insight-ai" id="box-ai">
+        <div class="ib-icon ib-violet">✨</div>
+        <div class="ib-body"><h3>تحلیل دقیق هوش مصنوعی</h3><p id="ib-ai-sub">هنوز تحلیل نشده</p></div>
+        <div class="ib-arrow">‹</div>
+      </button>
+    </div>
+
+    <div class="ai-panel card" id="ai-panel" hidden>
+      <div class="ai-panel-head">
+        <h3>✨ تحلیل هوش مصنوعی — <span id="ai-panel-name"></span></h3>
+        <span class="ai-meta" id="ai-panel-meta"></span>
+      </div>
+      <div class="ai-panel-body" id="ai-panel-body"></div>
+    </div>
+  </section>
+</main>
+
+<!-- مودال تفصیلی -->
+<div class="modal-backdrop" id="modal-drill" hidden>
+  <div class="modal modal-lg">
+    <header class="modal-head">
+      <h3 id="drill-title">—</h3>
+      <button class="icon-btn" data-close="modal-drill">✕</button>
+    </header>
+    <div class="drill-toolbar" id="drill-toolbar" hidden>
+      <div class="cat-chips" id="cat-chips"></div>
+      <div class="search-wrap sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input type="search" id="drill-search" placeholder="فیلتر…">
+      </div>
+    </div>
+    <div class="modal-body" id="drill-body"></div>
+    <footer class="modal-foot" id="drill-foot" hidden>
+      <button class="btn btn-ghost btn-sm" id="drill-more">نمایش بیشتر</button>
+    </footer>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="/static/profile.js"></script>
+</body>
+</html>
