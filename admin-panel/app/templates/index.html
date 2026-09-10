@@ -3,144 +3,427 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
 <title>{{ app_name }}</title>
 <link rel="stylesheet" href="/static/admin.css">
 <link rel="icon" href="/static/favicon.png">
+<script>
+(function () {
+  try {
+    var pref = localStorage.getItem('admin-theme') || 'system';
+    var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', pref === 'system' ? (dark ? 'dark' : 'light') : pref);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+})();
+</script>
 </head>
 <body>
 
-<header class="topbar">
-  <div class="topbar-inner">
+<header class="app-topbar">
+  <div class="app-topbar__inner">
     <div class="brand">
-      <img src="/static/icon48.png" alt="لوگو" class="brand-logo">
-      <div>
-        <h1>پنل مدیریت پروفایل‌ها</h1>
-        <span class="brand-sub">بانک اطلاعاتی پروفایل‌های مرور پاکسازی‌شده — فقط مدیر</span>
+      <img class="brand__logo" src="/static/logo.svg" alt="">
+      <div class="brand__text">
+        <span class="brand__title">پنل مدیریت پروفایل‌ها</span>
+        <span class="brand__sub">داشبورد تحلیل — دسترسی فقط مدیر</span>
       </div>
     </div>
-    <div class="topbar-stats" id="topbar-stats" hidden>
-      <div class="ts-item"><b id="ts-profiles">۰</b><span>پروفایل</span></div>
-      <div class="ts-item"><b id="ts-domains">۰</b><span>دامنه</span></div>
-      <div class="ts-item"><b id="ts-searches">۰</b><span>جستجو</span></div>
-    </div>
-    <div class="topbar-actions">
-      <button class="btn btn-telegram" id="btn-tg-poll" title="واکشی فایل‌های جدید از ربات تلگرام">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z"/></svg>
-        <span>دریافت از تلگرام</span>
+    <div class="app-topbar__spacer"></div>
+    <div class="app-topbar__actions">
+      <button class="btn btn--secondary btn--sm btn--hide-label" data-logout title="خروج از نشست" aria-label="خروج از نشست">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4.5h3.5A1.5 1.5 0 0 1 20 6v12a1.5 1.5 0 0 1-1.5 1.5H15"/><path d="M11 8l-4 4 4 4"/><path d="M7 12h9"/></svg>
+        <span class="btn__label">خروج</span>
       </button>
-      <label class="btn btn-primary" for="import-file" title="آپلود فایل‌های JSON خروجی افزونه">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-        افزودن کاربر
-      </label>
-      <input type="file" id="import-file" accept=".json,application/json" multiple hidden>
-      <button class="btn btn-ghost" id="btn-settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span>تنظیمات</span>
+      <button class="avatar-btn" id="btn-avatar" aria-haspopup="dialog" aria-expanded="false" aria-label="منوی کاربر">
+        <span class="avatar avatar--sm avatar--1" aria-hidden="true">م</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>
       </button>
-      <a class="btn btn-ghost" href="/logout" title="خروج از نشست">خروج</a>
     </div>
   </div>
 </header>
 
-<main class="main">
-  <section id="view-list">
-    <div class="list-toolbar">
-      <div class="search-wrap">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input type="search" id="profile-search" placeholder="جستجو در پروفایل‌ها…">
+<main class="main view-enter">
+
+  <!-- هدر خوش‌آمد + آمار زنده (حتی با لیست خالی دیده می‌شود) -->
+  <section class="welcome view-enter">
+    <svg class="welcome__pattern" viewBox="0 0 260 240" preserveAspectRatio="xMaxYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+        <pattern id="girih-soft" width="72" height="72" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="var(--accent)" stroke-width="1.1" opacity=".05">
+            <path d="M36 16L56 36 36 56 16 36Z"/>
+            <rect x="16" y="16" width="40" height="40"/>
+            <circle cx="36" cy="36" r="4"/>
+            <path d="M0 36h16M56 36h16M36 0v16M36 56v16"/>
+          </g>
+        </pattern>
+      </defs>
+      <rect width="260" height="240" fill="url(#girih-soft)"/>
+    </svg>
+
+    <div class="welcome__head">
+      <div>
+        <h1 class="welcome__title">داشبورد مدیریت</h1>
+        <p class="welcome__date" data-today>—</p>
       </div>
-      <select id="sort-select" class="select-inline">
-        <option value="newest">جدیدترین</option>
-        <option value="oldest">قدیمی‌ترین</option>
-        <option value="name">بر اساس نام</option>
-        <option value="data">بیشترین داده</option>
-      </select>
-      <span class="tg-status" id="tg-status"></span>
+      <span class="welcome__badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:15px;height:15px"><path d="M12 3.5l7.5 2.5v6c0 4.2-3 7.4-7.5 8.7C7.5 19.4 4.5 16.2 4.5 12V6z"/></svg>
+        داده‌های پاکسازی‌شده
+      </span>
     </div>
 
-    <div class="grid" id="profiles-grid"></div>
+    <div class="stat-row" id="stat-row">
+      <div class="stat-chip"><span class="stat-chip__icon skeleton" style="border:0"></span><span><b class="stat-chip__num skeleton sk-line sk-line--lg" style="width:44px;display:block;margin:0"></b><span class="stat-chip__label">پروفایل</span></span></div>
+      <div class="stat-chip"><span class="stat-chip__icon skeleton" style="border:0"></span><span><b class="stat-chip__num skeleton sk-line sk-line--lg" style="width:44px;display:block;margin:0"></b><span class="stat-chip__label">دامنه</span></span></div>
+      <div class="stat-chip"><span class="stat-chip__icon skeleton" style="border:0"></span><span><b class="stat-chip__num skeleton sk-line sk-line--lg" style="width:44px;display:block;margin:0"></b><span class="stat-chip__label">جستجو</span></span></div>
+      <div class="stat-chip"><span class="stat-chip__icon skeleton" style="border:0"></span><span><b class="stat-chip__num skeleton sk-line sk-line--lg" style="width:44px;display:block;margin:0"></b><span class="stat-chip__label">بازدید</span></span></div>
+    </div>
+  </section>
 
-    <div class="empty-state" id="empty-state">
-      <div class="dropzone" id="dropzone">
-        <div class="dz-icon">📥</div>
-        <h2>اولین پروفایل را اضافه کنید</h2>
-        <p>فایل‌های JSON خروجی افزونه را اینجا رها کنید<br>یا دکمه <b>«دریافت از تلگرام»</b> را بزنید تا فایل‌هایی که افزونه به ربات فرستاده واکشی شود.</p>
-        <div class="dz-actions">
-          <button class="btn btn-ghost btn-sm" id="btn-import-sample">✨ افزودن پروفایل نمونه</button>
+  <!-- نوار اقدام چسبان -->
+  <div class="list-toolbar">
+    <div class="search-field list-toolbar__grow">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.3-4.3"/></svg>
+      <input class="input" type="search" id="profile-search" placeholder="جستجو بر اساس نام، شناسه یا دستگاه…" aria-label="جستجو در پروفایل‌ها">
+    </div>
+    <select class="select" id="sort-select" aria-label="مرتب‌سازی پروفایل‌ها">
+      <option value="newest">جدیدترین</option>
+      <option value="oldest">قدیمی‌ترین</option>
+      <option value="name">بر اساس نام</option>
+      <option value="data">بیشترین داده</option>
+    </select>
+    <span class="list-toolbar__count" id="list-count"></span>
+    <div class="list-toolbar__primary-actions">
+      <button class="btn btn--secondary" id="btn-tg-poll">
+        <span class="dot dot--off" id="tg-dot" aria-hidden="true"></span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg>
+        <span>دریافت از تلگرام</span>
+      </button>
+      <button class="btn btn--primary" id="btn-add-user">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        <span>افزودن کاربر</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- کارت‌ها -->
+  <div class="grid" id="profiles-grid" aria-live="polite"></div>
+
+  <!-- حالت خالی: سه مسیر، بدون دیوار اجباری -->
+  <section class="empty-state" id="empty-state" hidden>
+    <div class="empty-art">
+      <svg viewBox="0 0 320 190" fill="none" role="img" aria-label="تصویرسازی خطی: پنجرهٔ مرور با نمودار، هواپیمای کاغذی و فایل داده">
+        <!-- پنجرهٔ مرور -->
+        <rect x="34" y="30" width="188" height="126" rx="14" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.8"/>
+        <path d="M34 56h188" stroke="var(--line-strong)" stroke-width="1.8"/>
+        <circle cx="50" cy="43" r="3.2" fill="var(--line-strong)"/>
+        <circle cx="61" cy="43" r="3.2" fill="var(--line-strong)"/>
+        <circle cx="72" cy="43" r="3.2" fill="var(--line-strong)"/>
+        <!-- نمودار میله‌ای = داده -->
+        <path d="M54 136h148" stroke="var(--line-strong)" stroke-width="1.8" stroke-linecap="round"/>
+        <rect x="64" y="102" width="16" height="34" rx="4" fill="var(--accent)" opacity=".34"/>
+        <rect x="90" y="84" width="16" height="52" rx="4" fill="var(--accent)" opacity=".52"/>
+        <rect x="116" y="112" width="16" height="24" rx="4" fill="var(--accent)" opacity=".3"/>
+        <rect x="142" y="74" width="16" height="62" rx="4" fill="var(--accent)" opacity=".82"/>
+        <rect x="168" y="94" width="16" height="42" rx="4" fill="var(--accent)" opacity=".58"/>
+        <!-- ذره‌بین -->
+        <circle cx="234" cy="132" r="18" stroke="var(--secondary)" stroke-width="2.4"/>
+        <path d="M247 145l13 13" stroke="var(--secondary)" stroke-width="2.4" stroke-linecap="round"/>
+        <!-- هواپیمای کاغذی (تلگرام) -->
+        <g stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" transform="translate(14 6) scale(.92)">
+          <path d="M21 3.5L10.5 14"/>
+          <path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/>
+        </g>
+        <!-- فایل داده -->
+        <path d="M258 100h30l16 16v42a4 4 0 0 1-4 4h-42a4 4 0 0 1-4-4v-54a4 4 0 0 1 4-4z" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M288 100v12a4 4 0 0 0 4 4h12" stroke="var(--line-strong)" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M264 130h28" stroke="var(--secondary)" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M264 140h18" stroke="var(--line-strong)" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- عناصر تزئینی -->
+        <path d="M300 34v12M294 40h12" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="24" cy="150" r="3.4" fill="var(--gold)" opacity=".8"/>
+        <path d="M124 12l2.4 5.6L132 20l-5.6 2.4L124 28l-2.4-5.6L116 20l5.6-2.4z" fill="var(--accent)" opacity=".45"/>
+      </svg>
+    </div>
+
+    <div>
+      <h2 class="empty-state__title">هنوز پروفایلی اینجا نیست</h2>
+      <p class="empty-state__text">
+        هر کدام از این سه مسیر را می‌خواهی انتخاب کن — هیچ‌کدام اجباری نیست و هر وقت خواستی می‌توانی برگردی.
+      </p>
+    </div>
+
+    <div class="path-grid">
+      <button class="path-card path-card--primary" id="path-telegram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg>
+        <span class="path-card__title">دریافت از تلگرام</span>
+        <span class="path-card__sub">فایل‌هایی که افزونه به چت ربات فرستاده</span>
+      </button>
+      <button class="path-card" id="path-upload">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.5"/><path d="M12 4v11"/><path d="M7.5 8.5L12 4l4.5 4.5"/></svg>
+        <span class="path-card__title">آپلود فایل</span>
+        <span class="path-card__sub">خروجی JSON افزونه از روی دستگاه</span>
+      </button>
+      <button class="path-card" id="path-sample">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/><path d="M18 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg>
+        <span class="path-card__title">پروفایل نمونه</span>
+        <span class="path-card__sub">دادهٔ آزمایشی برای آشنایی با داشبورد</span>
+      </button>
+    </div>
+
+    <div class="dropzone" id="dropzone">
+      <span class="dropzone__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 13.5h4l1.5 2.5h6l1.5-2.5h4"/><path d="M5.5 5.5h13l2 8v4a2.5 2.5 0 0 1-2.5 2.5H6A2.5 2.5 0 0 1 3.5 17.5v-4z"/></svg>
+      </span>
+      <span class="dropzone__hint">یا فایل‌های <span class="mono">browsing-profile_*.json</span> را همین‌جا رها کن</span>
+    </div>
+
+    <div class="empty-state__foot">
+      <button class="btn btn--ghost" id="btn-calm">فعلاً فقط نگاه می‌کنم</button>
+    </div>
+  </section>
+
+  <!-- حالت آرام: راهنمای جریان داده -->
+  <section class="empty-state calm" id="empty-calm" hidden>
+    <span class="calm__icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 4.5c-9 0-15 3.4-15 9.5a6.5 6.5 0 0 0 6.5 6.5c6 0 8.5-6 8.5-16z"/><path d="M5 20.5c1.5-6 5-10 11-12"/></svg>
+    </span>
+    <div>
+      <h2 class="empty-state__title">باشد، فعلاً تماشا کن</h2>
+      <p class="empty-state__text">
+        هیچ کاری لازم نیست انجام دهی. این‌جا مسیر داده از دستگاه کاربر تا این جدول آمده است؛
+        هر وقت آماده بودی یکی از سه راه اضافه‌کردن پروفایل را انتخاب کن.
+      </p>
+    </div>
+    <div class="flow-steps">
+      <div class="flow-step">
+        <span class="flow-step__num">۱</span>
+        <div>
+          <p class="flow-step__title">نصب افزونهٔ «خریدار پرو» روی مرورگر کاربر</p>
+          <p class="flow-step__sub">افزونه فقط دامنه، تعداد بازدید و عبارت‌های جستجو را می‌خواند.</p>
         </div>
-        <div class="dz-formats"><span>browsing-profile_*.json</span></div>
       </div>
-      <div class="empty-help">
-        <h3>جریان داده:</h3>
-        <ol>
-          <li>کاربر، افزونه «خریدار پرو» را در کروم نصب و تحلیل می‌گیرد</li>
-          <li>افزونه، فایل <code>browsing-profile_*.json</code> پاکسازی‌شده را به چت ربات تلگرام شما می‌فرستد</li>
-          <li>شما در همین پنل «دریافت از تلگرام» می‌زنید — فایل‌ها اعتبارسنجی مجدد و ایمپورت می‌شوند</li>
-        </ol>
+      <div class="flow-step">
+        <span class="flow-step__num">۲</span>
+        <div>
+          <p class="flow-step__title">ارسال فایل پاکسازی‌شده به چت ربات تلگرام</p>
+          <p class="flow-step__sub">خروجی با نام <span class="mono">browsing-profile_*.json</span> در چت ادمین می‌نشیند.</p>
+        </div>
+      </div>
+      <div class="flow-step">
+        <span class="flow-step__num">۳</span>
+        <div>
+          <p class="flow-step__title">واکشی و اعتبارسنجی مجدد در همین پنل</p>
+          <p class="flow-step__sub">دکمهٔ «دریافت از تلگرام» فایل‌ها را ایمپورت و دسته‌بندی می‌کند.</p>
+        </div>
       </div>
     </div>
+    <button class="btn btn--secondary" id="btn-calm-back">نمایش گزینه‌های شروع</button>
   </section>
 </main>
 
-<!-- مودال تنظیمات -->
+<!-- FAB موبایل: افزودن کاربر (سمت شست در RTL) -->
+<button class="fab" id="fab-add" aria-label="افزودن کاربر">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+</button>
+
+<!-- نوار پایین موبایل -->
+<nav class="bottom-nav" aria-label="ناوبری موبایل">
+  <button class="bottom-nav__item is-active" id="bnav-home" data-back="0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l8.5 4.2L12 12 3.5 7.7z"/><path d="M4.5 12.5L12 16.3l7.5-3.8"/><path d="M4.5 16.5L12 20.3l7.5-3.8"/></svg>
+    <span>پروفایل‌ها</span>
+  </button>
+  <button class="bottom-nav__item" id="bnav-telegram">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg>
+    <span>دریافت از تلگرام</span>
+  </button>
+  <button class="bottom-nav__item" id="bnav-menu" aria-haspopup="dialog" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>
+    <span>منو</span>
+  </button>
+</nav>
+
+<!-- منوی آواتار (دسکتاپ: dropdown / موبایل: bottom sheet) -->
+<button class="menu-backdrop" id="menu-backdrop" aria-label="بستن منو" tabindex="-1" hidden></button>
+<div class="menu-sheet" id="avatar-menu" role="dialog" aria-label="منوی کاربر" hidden>
+  <div class="menu-section">
+    <p class="menu-label">تم ظاهری</p>
+    <div class="segmented" role="group" aria-label="انتخاب تم">
+      <button type="button" class="segmented__btn" data-theme-set="light" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2"/><path d="M12 19.5v2"/><path d="M2.5 12h2"/><path d="M19.5 12h2"/><path d="M5.3 5.3l1.4 1.4"/><path d="M17.3 17.3l1.4 1.4"/><path d="M18.7 5.3l-1.4 1.4"/><path d="M6.7 17.3l-1.4 1.4"/></svg>
+        <span>روشن</span>
+      </button>
+      <button type="button" class="segmented__btn" data-theme-set="dark" aria-pressed="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5a8.5 8.5 0 1 0 10.8 10.8z"/></svg>
+        <span>تیره</span>
+      </button>
+      <button type="button" class="segmented__btn" data-theme-set="system" aria-pressed="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="12" rx="2.5"/><path d="M9 20h6"/><path d="M12 16v4"/></svg>
+        <span>سیستم</span>
+      </button>
+    </div>
+  </div>
+  <div class="menu-section">
+    <p class="menu-label">حساب مدیر</p>
+    <button class="menu-item" id="mi-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9"/><path d="M18.5 7H21"/><path d="M4 17h4"/><path d="M13.5 17H21"/><circle cx="15.5" cy="7" r="2.2"/><circle cx="10.5" cy="17" r="2.2"/></svg>
+      <span>تنظیمات پنل</span>
+      <span class="menu-item__meta">AvalAI • تلگرام • رمز</span>
+    </button>
+    <button class="menu-item menu-item--danger" data-logout>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 4.5h3.5A1.5 1.5 0 0 1 20 6v12a1.5 1.5 0 0 1-1.5 1.5H15"/><path d="M11 8l-4 4 4 4"/><path d="M7 12h9"/></svg>
+      <span>خروج از حساب</span>
+    </button>
+  </div>
+</div>
+
+<!-- مودال تنظیمات: سه بخش با نشانگر وضعیت -->
 <div class="modal-backdrop" id="modal-settings" hidden>
-  <div class="modal">
+  <div class="modal modal--sm modal--full-sm" role="document">
+    <div class="sheet-handle" aria-hidden="true"></div>
     <header class="modal-head">
-      <h3>⚙️ تنظیمات پنل</h3>
-      <button class="icon-btn" data-close="modal-settings">✕</button>
+      <h2 class="modal-head__title">تنظیمات پنل<small>هوش مصنوعی، ربات تلگرام و امنیت</small></h2>
+      <div class="modal-head__actions">
+        <button class="icon-btn" data-close="modal-settings" aria-label="بستن تنظیمات">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+        </button>
+      </div>
     </header>
     <div class="modal-body">
-      <div class="divider"><span>هوش مصنوعی AvalAI</span></div>
-      <div class="field">
-        <label>کلید API <small id="ai-key-state"></small></label>
-        <input type="password" id="set-ai-key" placeholder="sk-…" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>مدل تحلیل</label>
-        <select id="set-model">
-          <option value="qwen3.8-flash">Qwen 3.8 Flash — ارزان و سریع (پیشنهادی)</option>
-          <option value="glm-5.3-flash">GLM 5.3 Flash — ارزان</option>
-          <option value="gemini-flash-latest">Gemini Flash</option>
-          <option value="gpt-6-astra">GPT-6 Astra — قوی‌ترین</option>
-          <option value="claude-fable-5-1">Claude Fable 5.1</option>
-          <option value="custom">مدل سفارشی…</option>
-        </select>
-        <input type="text" id="set-model-custom" placeholder="نام مدل سفارشی" hidden>
-      </div>
-      <div class="row">
-        <button class="btn btn-ghost btn-sm" id="btn-test-ai">تست اتصال</button>
-        <button class="btn btn-primary btn-sm" id="btn-save-ai">ذخیره</button>
-      </div>
 
-      <div class="divider"><span>ربات تلگرام (منبع ایمپورت فایل‌ها)</span></div>
-      <div class="field">
-        <label>توکن ربات <small id="tg-state"></small></label>
-        <input type="password" id="set-tg-token" placeholder="123456789:AAF…" autocomplete="off">
-      </div>
-      <div class="field">
-        <label>شناسه عددی چت ادمین</label>
-        <input type="text" id="set-tg-chat" inputmode="numeric" placeholder="8810826597" autocomplete="off">
-      </div>
-      <p class="hint">فقط فایل‌های JSON ارسالی از این چت ایمپورت می‌شوند. رازها با Fernet رمز و در پایگاه‌داده ذخیره می‌شوند و هرگز لاگ نمی‌شوند.</p>
-      <div class="row">
-        <button class="btn btn-ghost btn-sm" id="btn-test-tg">تست ارسال</button>
-        <button class="btn btn-primary btn-sm" id="btn-save-tg">ذخیره</button>
-      </div>
+      <section class="set-section">
+        <header class="set-section__head">
+          <span class="set-section__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/><path d="M18 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg>
+          </span>
+          <div>
+            <p class="set-section__title">هوش مصنوعی AvalAI</p>
+            <p class="hint" id="ai-model-state">—</p>
+          </div>
+          <span class="badge badge--warn set-state" id="ai-state-pill"></span>
+        </header>
+        <div class="set-section__body">
+          <div class="field">
+            <label class="field__label" for="set-ai-key">کلید API <small id="ai-key-state"></small></label>
+            <input class="field__input" type="password" id="set-ai-key" placeholder="sk-…" autocomplete="off">
+          </div>
+          <div class="field">
+            <label class="field__label" for="set-model">مدل تحلیل</label>
+            <select class="select" id="set-model" data-autofocus>
+              <option value="qwen3.8-flash">Qwen 3.8 Flash — ارزان و سریع (پیشنهادی)</option>
+              <option value="glm-5.3-flash">GLM 5.3 Flash — ارزان</option>
+              <option value="gemini-flash-latest">Gemini Flash</option>
+              <option value="gpt-6-astra">GPT-6 Astra — قوی‌ترین</option>
+              <option value="claude-fable-5-1">Claude Fable 5.1</option>
+              <option value="custom">مدل سفارشی…</option>
+            </select>
+            <input class="field__input mono" type="text" id="set-model-custom" placeholder="نام مدل سفارشی" hidden>
+          </div>
+          <div class="row">
+            <button class="btn btn--secondary btn--sm grow" id="btn-test-ai">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5V9h-4.5"/></svg>
+              <span>تست اتصال</span>
+            </button>
+            <button class="btn btn--primary btn--sm grow" id="btn-save-ai"><span>ذخیره</span></button>
+          </div>
+        </div>
+      </section>
 
-      <div class="divider"><span>امنیت پنل</span></div>
-      <div class="field">
-        <label>تغییر رمز مدیر</label>
-        <input type="password" id="set-pass-current" placeholder="رمز فعلی" autocomplete="current-password">
-        <input type="password" id="set-pass-new" placeholder="رمز جدید (حداقل ۸ کاراکتر)" autocomplete="new-password">
-      </div>
-      <button class="btn btn-ghost btn-sm" id="btn-save-pass">تغییر رمز</button>
+      <section class="set-section">
+        <header class="set-section__head">
+          <span class="set-section__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg>
+          </span>
+          <div>
+            <p class="set-section__title">ربات تلگرام</p>
+            <p class="hint">منبع ایمپورت فایل‌های افزونه</p>
+          </div>
+          <span class="badge badge--warn set-state" id="tg-state-pill"></span>
+        </header>
+        <div class="set-section__body">
+          <div class="field">
+            <label class="field__label" for="set-tg-token">توکن ربات</label>
+            <input class="field__input mono" type="password" id="set-tg-token" placeholder="123456789:AAF…" autocomplete="off">
+          </div>
+          <div class="field">
+            <label class="field__label" for="set-tg-chat">شناسهٔ عددی چت ادمین</label>
+            <input class="field__input mono" type="text" id="set-tg-chat" inputmode="numeric" placeholder="8810826597" autocomplete="off">
+          </div>
+          <p class="hint">
+            فقط فایل‌های JSON ارسالی از این چت ایمپورت می‌شوند. رازها با Fernet رمز و در پایگاه‌داده ذخیره می‌شوند و هرگز لاگ نمی‌شوند.
+          </p>
+          <div class="row">
+            <button class="btn btn--secondary btn--sm grow" id="btn-test-tg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.5"/><path d="M12 4v11"/><path d="M7.5 8.5L12 4l4.5 4.5"/></svg>
+              <span>تست ارسال</span>
+            </button>
+            <button class="btn btn--primary btn--sm grow" id="btn-save-tg"><span>ذخیره</span></button>
+          </div>
+        </div>
+      </section>
+
+      <section class="set-section">
+        <header class="set-section__head">
+          <span class="set-section__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+          </span>
+          <div>
+            <p class="set-section__title">امنیت پنل</p>
+            <p class="hint">تغییر رمز مدیر (حداقل ۸ کاراکتر)</p>
+          </div>
+          <span class="badge badge--warn set-state" id="pass-state-pill"></span>
+        </header>
+        <div class="set-section__body">
+          <div class="field">
+            <label class="field__label" for="set-pass-current">رمز فعلی</label>
+            <input class="field__input" type="password" id="set-pass-current" autocomplete="current-password">
+          </div>
+          <div class="field">
+            <label class="field__label" for="set-pass-new">رمز جدید</label>
+            <input class="field__input" type="password" id="set-pass-new" autocomplete="new-password">
+          </div>
+          <button class="btn btn--primary btn--block btn--sm" id="btn-save-pass"><span>تغییر رمز</span></button>
+        </div>
+      </section>
     </div>
   </div>
 </div>
 
-<div class="toast" id="toast" hidden></div>
-<div class="drop-overlay" id="drop-overlay" hidden><div>فایل‌ها را رها کنید…</div></div>
+<!-- تأییدیه -->
+<div class="modal-backdrop" id="modal-confirm" hidden>
+  <div class="modal modal--sm">
+    <header class="modal-head">
+      <h2 class="modal-head__title" id="confirm-title">تأیید عملیات</h2>
+      <div class="modal-head__actions">
+        <button class="icon-btn" id="confirm-cancel" aria-label="انصراف">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </header>
+    <div class="modal-body">
+      <div class="confirm-body">
+        <span class="confirm-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5l8.5 15h-17z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <p class="confirm-text" id="confirm-text"></p>
+      </div>
+    </div>
+    <footer class="modal-foot">
+      <button class="btn btn--secondary" id="confirm-cancel-2" data-close="modal-confirm">انصراف</button>
+      <button class="btn btn--danger" id="confirm-ok">تأیید</button>
+    </footer>
+  </div>
+</div>
 
+<div class="drop-overlay" id="drop-overlay" hidden>
+  <div class="drop-overlay__box">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.5"/><path d="M12 4v11"/><path d="M7.5 8.5L12 4l4.5 4.5"/></svg>
+    فایل‌ها را رها کن…
+  </div>
+</div>
+
+<input type="file" id="import-file" accept=".json,application/json" multiple hidden>
+
+<script src="/static/app-core.js"></script>
 <script src="/static/admin.js"></script>
 </body>
 </html>

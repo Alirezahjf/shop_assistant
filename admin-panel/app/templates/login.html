@@ -3,34 +3,165 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ورود — پنل مدیریت</title>
+<meta name="color-scheme" content="light dark">
+<title>ورود — پنل مدیریت پروفایل‌ها</title>
 <link rel="stylesheet" href="/static/admin.css">
 <link rel="icon" href="/static/favicon.png">
+<script>
+/* تم پیش از رندر اعمال می‌شود تا پرش رنگ نداشته باشیم */
+(function () {
+  try {
+    var pref = localStorage.getItem('admin-theme') || 'system';
+    var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', pref === 'system' ? (dark ? 'dark' : 'light') : pref);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+})();
+</script>
 </head>
 <body class="login-body">
-  <div class="login-card">
-    <div class="login-logo">
-      <img src="/static/icon48.png" alt="لوگو">
+
+  <!-- پنل برند (در RTL سمت راست) -->
+  <section class="login-brand">
+    <svg class="login-brand__pattern" viewBox="0 0 480 640" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
+      <defs>
+        <pattern id="girih" width="80" height="80" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="#FFF7EF" stroke-width="1.1" opacity=".05">
+            <path d="M40 18L62 40 40 62 18 40Z"/>
+            <rect x="18" y="18" width="44" height="44"/>
+            <circle cx="40" cy="40" r="4.5"/>
+            <path d="M0 40h18M62 40h18M40 0v18M40 62v18"/>
+          </g>
+        </pattern>
+      </defs>
+      <rect width="480" height="640" fill="url(#girih)"/>
+    </svg>
+
+    <img class="login-brand__logo" src="/static/logo.svg" alt="">
+    <div>
+      <h1 class="login-brand__title">پنل مدیریت پروفایل‌ها</h1>
+      <p class="login-brand__text">
+        داشبورد تحلیل پروفایل‌های مرورِ پاکسازی‌شدهٔ «خریدار پرو» — داده‌ها فقط برای مدیر سیستم و بدون هیچ مقدار حساسی.
+      </p>
     </div>
-    <h1>پنل مدیریت پروفایل‌ها</h1>
-    <p class="login-sub">دستیار خرید هوشمند — فقط برای مدیر سیستم</p>
 
-    {% if error %}
-    <div class="login-error">{{ error }}</div>
-    {% endif %}
-
-    <form method="post" action="/login" class="login-form">
-      <div class="field">
-        <label for="password">رمز عبور مدیر</label>
-        <div class="input-wrap">
-          <input type="password" id="password" name="password" autocomplete="current-password" required autofocus>
-          <button type="button" class="eye" data-eye="password">👁</button>
+    <ul class="login-features">
+      <li class="login-feature">
+        <span class="login-feature__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 13.5h4l1.5 2.5h6l1.5-2.5h4"/><path d="M5.5 5.5h13l2 8v4a2.5 2.5 0 0 1-2.5 2.5H6A2.5 2.5 0 0 1 3.5 17.5v-4z"/></svg>
+        </span>
+        <div>
+          <h2 class="login-feature__title">ایمپورت یک‌کلیکی</h2>
+          <p class="login-feature__sub">آپلود فایل JSON افزونه یا واکشی خودکار از چت ربات تلگرام.</p>
         </div>
-      </div>
-      <button type="submit" class="btn btn-primary btn-block">ورود به پنل</button>
-    </form>
+      </li>
+      <li class="login-feature">
+        <span class="login-feature__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.4 2.4 3.6 5.4 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.4-3.6-8.5S9.6 5.9 12 3.5z"/></svg>
+        </span>
+        <div>
+          <h2 class="login-feature__title">دسته‌بندی سرور-محور</h2>
+          <p class="login-feature__sub">۲۱ دستهٔ موضوعی، محاسبهٔ محلی و بدون مصرف توکن هوش مصنوعی.</p>
+        </div>
+      </li>
+      <li class="login-feature">
+        <span class="login-feature__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/><path d="M18 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg>
+        </span>
+        <div>
+          <h2 class="login-feature__title">تحلیل هوشمند اختیاری</h2>
+          <p class="login-feature__sub">گزارش مقاله‌ای از علاقه‌مندی‌ها و عادت‌های خرید، با کلید خودت.</p>
+        </div>
+      </li>
+    </ul>
 
-    <p class="login-hint">🔐 نشست شما با کوکی امن HttpOnly نگه‌داری می‌شود.<br>رمز پیش‌فرض از متغیر <code>ADMIN_PASSWORD</code> در فایل <code>.env</code> تغییر می‌کند.</p>
-  </div>
+    <p class="login-brand__foot">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+      نشست با کوکی HttpOnly نگه‌داری می‌شود؛ رازها با Fernet رمزنگاری می‌شوند.
+    </p>
+  </section>
+
+  <!-- فرم ورود (سمت چپ در RTL) -->
+  <section class="login-panel">
+    <div class="login-form-wrap">
+      <div>
+        <h2 class="login-panel__title">خوش برگشتی</h2>
+        <p class="login-panel__sub">برای دیدن داشبورد، رمز مدیر را وارد کن.</p>
+      </div>
+
+      {% if error %}
+      <div class="login-error" role="alert" id="server-error" tabindex="-1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5l8.5 15h-17z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/></svg>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      <form class="login-form" method="post" action="/login" id="login-form" novalidate>
+        <div class="field" id="password-field">
+          <label class="field__label" for="password">رمز عبور مدیر</label>
+          <div class="input-wrap">
+            <input class="field__input" type="password" id="password" name="password"
+                   placeholder="••••••••" autocomplete="current-password" required
+                   aria-describedby="password-error" {% if not error %}autofocus{% endif %}>
+            <button type="button" class="eye-btn" data-eye="password" aria-label="نمایش رمز">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+            </button>
+          </div>
+          <p class="field__error" id="password-error" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5l8.5 15h-17z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/></svg>
+            <span>رمز عبور را وارد کنید.</span>
+          </p>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block" id="btn-login">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+          <span>ورود به پنل</span>
+        </button>
+      </form>
+
+      <div class="login-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".95" fill="currentColor" stroke="none"/></svg>
+        <span>
+          رمز پیش‌فرض از متغیر <code>ADMIN_PASSWORD</code> در فایل <code>.env</code> خوانده می‌شود؛
+          پس از ورود می‌توانی از «تنظیمات ← امنیت پنل» آن را تغییر دهی.
+        </span>
+      </div>
+    </div>
+  </section>
+
+<script src="/static/app-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  // پوستهٔ مشترک: تم، چشمی رمز، فوکوس‌تراپ و بستن با Esc
+  App.wireShell();
+
+  var form = document.getElementById('login-form');
+  var input = document.getElementById('password');
+  var field = document.getElementById('password-field');
+  var errorBox = document.getElementById('password-error');
+  var btn = document.getElementById('btn-login');
+
+  function clearError() {
+    field.classList.remove('field--invalid');
+    if (errorBox) errorBox.hidden = true;
+  }
+  input.addEventListener('input', clearError);
+
+  // خطای سمت سرور (رمز نادرست) با صفحه برمی‌گردد؛ فوکوس را به همان پیام می‌بریم
+  var serverError = document.getElementById('server-error');
+  if (serverError) serverError.focus({ preventScroll: true });
+
+  form.addEventListener('submit', function (e) {
+    if (!input.value.trim()) {
+      e.preventDefault();
+      field.classList.add('field--invalid');
+      if (errorBox) errorBox.hidden = false;
+      input.focus();
+      return;
+    }
+    App.btnLoading(btn, true, 'در حال ورود…');
+  });
+})();
+</script>
 </body>
 </html>
