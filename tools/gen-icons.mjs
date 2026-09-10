@@ -1,6 +1,7 @@
 // ============================================================================
 // gen-icons.mjs — تولید آیکون‌های PNG افزونه از طراحی برداری (بدون وابستگی)
 // اجرا: node tools/gen-icons.mjs
+// هویت: «کاغذ کاهی و مُس» — پس‌زمینهٔ مُس تخت + نشان کیف خرید و تیک کرم‌رنگ
 // ============================================================================
 import { deflateSync } from 'node:zlib';
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -10,6 +11,11 @@ import { fileURLToPath } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, 'smart-shopping-assistant', 'icons');
 mkdirSync(outDir, { recursive: true });
+
+// ---------- پالت برند (هم‌رنگ پنل مدیریت) ----------
+const ACCENT = [178, 91, 50];      // #B25B32 — مُس
+const ON_ACCENT = [255, 247, 239]; // #FFF7EF — کرم
+const RING_ALPHA = 0.22;           // قاب داخلی، مثل لوگوی پنل
 
 // ---------- ریاضیات شکل (مختصات 128×128 مثل SVG مرجع) ----------
 const clamp = (v, a, b) => Math.min(Math.max(v, a), b);
@@ -31,39 +37,32 @@ function sdSegment(px, py, ax, ay, bx, by) {
 
 /** ارزیابی پوشش نقطه (0..1) و رنگ */
 function sample(px, py) {
-  // پس‌زمینه: مستطیل گرد با گرادیان
+  // پس‌زمینه: مربع گرد مُس (تخت، بدون گرادیان)
   const bg = sdfRoundRect(px, py, 4, 4, 124, 124, 30);
   let alpha = clamp(0.5 - bg, 0, 1);
-  let r = 0, g = 0, b = 0;
+  let r = ACCENT[0], g = ACCENT[1], b = ACCENT[2];
 
   if (alpha > 0) {
-    const t = clamp((px + py - 8) / 232, 0, 1); // گرادیان قطری
-    r = 139 + (99 - 139) * t;
-    g = 92 + (102 - 92) * t;
-    b = 246 + (241 - 246) * t;
-
     const stroke = (w) => clamp(0.5 + w, 0, 1);
+    const mixOnAccent = (a) => {
+      r = r * (1 - a) + ON_ACCENT[0] * a;
+      g = g * (1 - a) + ON_ACCENT[1] * a;
+      b = b * (1 - a) + ON_ACCENT[2] * a;
+    };
+
+    // قاب داخلی کم‌رنگ (هم‌خانواده لوگوی پنل)
+    const ring = Math.abs(sdfRoundRect(px, py, 13, 13, 115, 115, 24));
+    if (ring <= 1) mixOnAccent(stroke(0.5 - ring) * RING_ALPHA);
 
     // بدنه کیف: مستطیل گرد با خط دور 7
     const bag = Math.abs(sdfRoundRect(px, py, 36, 46, 92, 106, 6));
-    if (bag <= 3.5) {
-      const a = stroke(0.5 - bag / 7);
-      r = r * (1 - a) + 255 * a; g = g * (1 - a) + 255 * a; b = b * (1 - a) + 255 * a;
-    }
+    if (bag <= 3.5) mixOnAccent(stroke(0.5 - bag / 7));
     // دسته: حلقه دایره‌ای بالای کیف
     const dHandle = Math.abs(len(px - 64, py - 39) - 14);
-    if (dHandle <= 3.5 && py <= 47) {
-      const a = stroke(0.5 - dHandle / 7);
-      r = r * (1 - a) + 255 * a; g = g * (1 - a) + 255 * a; b = b * (1 - a) + 255 * a;
-    }
+    if (dHandle <= 3.5 && py <= 47) mixOnAccent(stroke(0.5 - dHandle / 7));
     // تیک: دو پاره‌خط با سر گرد
-    const d1 = sdSegment(px, py, 50, 78, 60, 88);
-    const d2 = sdSegment(px, py, 60, 88, 79, 67);
-    const dCheck = Math.min(d1, d2);
-    if (dCheck <= 4) {
-      const a = stroke(0.5 - dCheck / 8);
-      r = r * (1 - a) + 255 * a; g = g * (1 - a) + 255 * a; b = b * (1 - a) + 255 * a;
-    }
+    const dCheck = Math.min(sdSegment(px, py, 50, 78, 60, 88), sdSegment(px, py, 60, 88, 79, 67));
+    if (dCheck <= 4) mixOnAccent(stroke(0.5 - dCheck / 8));
   }
   return [r, g, b, alpha * 255];
 }

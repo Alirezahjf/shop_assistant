@@ -1,297 +1,333 @@
 // ============================================================================
-// admin.js — فرانت‌اند پنل مدیریت (لیست پروفایل‌ها، ایمپورت، تلگرام، تنظیمات)
-// تمام منطق سمت سرور (FastAPI) است؛ اینجا فقط رندر و فراخوانی API.
+// admin.js — صفحهٔ فهرست پروفایل‌ها
+// ----------------------------------------------------------------------------
+// مسئولیت‌ها: آمار زندهٔ هدر، اسکلتون، کارت‌های پروفایل، جستجو/مرتب‌سازی،
+//             ایمپورت (آپلود + درگ‌اند‌دراپ + نمونه)، واکشی از تلگرام، حالت خالی.
+// همهٔ endpointها دست‌نخورده‌اند: /api/stats ، /api/profiles ، /api/profiles/import ،
+//             /api/profiles/import-sample ، /api/telegram/poll|status
 // ============================================================================
-(() => {
+(function () {
 'use strict';
 
 const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const faNum = (n) => Number(n || 0).toLocaleString('fa-IR');
+const { icon, esc, faNum, faDate, faDateTime, initials, avatarClass, sourceMeta, toast, api } = App;
 
-const faDate = (ts) => {
-  try {
-    const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
-    return isNaN(d) ? '—' : d.toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
-  } catch { return '—'; }
+const state = {
+  profiles: [],
+  loading: true,
+  calm: false,
+  telegramConfigured: null,
 };
 
-let toastTimer;
-function toast(msg, kind = '') {
-  const t = $('toast');
-  t.textContent = msg;
-  t.className = `toast ${kind}`;
-  t.hidden = false;
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.hidden = true; }, 3600);
+const STAT_CHIPS = [
+  { key: 'profiles', label: 'پروفایل', icon: 'users' },
+  { key: 'domains', label: 'دامنه', icon: 'globe' },
+  { key: 'searches', label: 'جستجو', icon: 'search' },
+  { key: 'visits', label: 'بازدید', icon: 'chart' },
+];
+
+// ───────────────────────────── هدر: آمار زنده ─────────────────────────────
+function renderStatSkeleton() {
+  const row = $('stat-row');
+  if (!row) return;
+  row.innerHTML = STAT_CHIPS.map((c) => `
+    <div class="stat-chip">
+      <span class="stat-chip__icon skeleton" style="border:0"></span>
+      <span>
+        <b class="stat-chip__num skeleton sk-line sk-line--lg" style="width:44px;display:block;margin:0"></b>
+        <span class="stat-chip__label">${esc(c.label)}</span>
+      </span>
+    </div>`).join('');
 }
 
-async function api(path, options = {}) {
-  const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
-  let data;
-  try { data = await res.json(); } catch { data = {}; }
-  if (!res.ok) throw new Error(data.error || `خطای سرور (${res.status})`);
-  return data;
+function renderStats(s) {
+  const row = $('stat-row');
+  if (!row) return;
+  row.innerHTML = STAT_CHIPS.map((c) => `
+    <div class="stat-chip">
+      <span class="stat-chip__icon">${icon(c.icon)}</span>
+      <span>
+        <b class="stat-chip__num">${faNum(s[c.key] || 0)}</b>
+        <span class="stat-chip__label">${esc(c.label)}</span>
+      </span>
+    </div>`).join('');
 }
 
-function initials(text) {
-  const words = String(text || '؟').trim().split(/[\s_-]+/).filter(Boolean);
-  return words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : String(text || '؟').slice(0, 2).toUpperCase();
-}
-
-// ───────────────────────── لیست پروفایل‌ها ─────────────────────────
-let profiles = [];
-
-async function refreshStats() {
+async function loadStats() {
   try {
-    const s = await api('/api/stats');
-    $('topbar-stats').hidden = !s.profiles;
-    $('ts-profiles').textContent = faNum(s.profiles);
-    $('ts-domains').textContent = faNum(s.domains);
-    $('ts-searches').textContent = faNum(s.searches);
-  } catch { /* noop */ }
-}
-
-async function loadList() {
-  try {
-    const data = await api('/api/profiles');
-    profiles = data.profiles || [];
-    renderList();
-    refreshStats();
+    renderStats(await api('/api/stats'));
   } catch (e) {
-    if (e.message.includes('نشست')) location.href = '/login';
-    else toast(e.message, 'err');
+    const row = $('stat-row');
+    if (row) row.innerHTML = `<div class="stat-chip"><span class="stat-chip__label">آمار در دسترس نیست — ${esc(e.message)}</span></div>`;
   }
+}
+
+// ───────────────────────────── اسکلتون و کارت‌ها ─────────────────────────────
+function renderSkeletons(n = 6) {
+  const grid = $('profiles-grid');
+  if (!grid) return;
+  grid.innerHTML = Array.from({ length: n }).map(() => `
+    <div class="profile-card" aria-hidden="true">
+      <div class="profile-card__head">
+        <span class="sk-circle skeleton"></span>
+        <div class="grow">
+          <span class="skeleton sk-line sk-line--lg sk-line--w60"></span>
+          <span class="skeleton sk-line sk-line--w40"></span>
+        </div>
+      </div>
+      <div class="profile-card__stats">
+        <span class="skeleton sk-stat"></span><span class="skeleton sk-stat"></span><span class="skeleton sk-stat"></span>
+      </div>
+      <span class="skeleton sk-line sk-line--w80" style="margin:0"></span>
+    </div>`).join('');
+}
+
+function cardHtml(p) {
+  const src = sourceMeta(p.source);
+  const analyzed = !!p.analyzed;
+  return `
+  <article class="profile-card" role="button" tabindex="0" data-uid="${esc(p.uid)}"
+           aria-label="پروفایل ${esc(p.name)} — ${faNum(p.stats?.domains || 0)} دامنه، ${faNum(p.stats?.searches || 0)} جستجو">
+    <div class="profile-card__head">
+      <span class="avatar ${avatarClass(p.uid + p.name)}" aria-hidden="true">${esc(initials(p.name))}</span>
+      <div class="grow">
+        <span class="profile-card__name truncate">${esc(p.name)}</span>
+        <span class="profile-card__uid">${esc(p.uid)}</span>
+      </div>
+      <div class="profile-card__badges">
+        <span class="badge ${src.cls}">${icon(src.icon)}<span>${esc(src.label)}</span></span>
+        <span class="badge ${analyzed ? 'badge--gold' : ''}">${icon(analyzed ? 'check' : 'clock')}<span>${analyzed ? 'تحلیل‌شده' : 'تحلیل نشده'}</span></span>
+      </div>
+    </div>
+    <div class="profile-card__stats">
+      <div class="pc-stat"><b>${faNum(p.stats?.domains || 0)}</b><span>دامنه</span></div>
+      <div class="pc-stat"><b>${faNum(p.stats?.searches || 0)}</b><span>جستجو</span></div>
+      <div class="pc-stat"><b>${faNum(p.stats?.totalVisits || 0)}</b><span>بازدید</span></div>
+    </div>
+    <div class="profile-card__foot">
+      <span class="grow truncate">${icon('calendar')} ${esc(faDate(p.importedAt))} • ${esc(p.deviceLabel || 'دستگاه نامشخص')}</span>
+      <span class="truncate mono">${esc(p.sourceFile || '—')}</span>
+    </div>
+  </article>`;
+}
+
+function sortedFiltered() {
+  const q = ($('profile-search')?.value || '').toLowerCase().trim();
+  const sort = $('sort-select')?.value || 'newest';
+  let list = state.profiles.filter((p) => !q
+    || (p.name || '').toLowerCase().includes(q)
+    || (p.uid || '').toLowerCase().includes(q)
+    || (p.deviceLabel || '').toLowerCase().includes(q)
+    || (p.sourceFile || '').toLowerCase().includes(q));
+  list = [...list].sort((a, b) => {
+    if (sort === 'oldest') return (a.importedAt || 0) - (b.importedAt || 0);
+    if (sort === 'name') return String(a.name).localeCompare(String(b.name), 'fa');
+    if (sort === 'data') return (b.stats?.totalVisits || 0) - (a.stats?.totalVisits || 0);
+    return (b.importedAt || 0) - (a.importedAt || 0);
+  });
+  return list;
 }
 
 function renderList() {
   const grid = $('profiles-grid');
   const empty = $('empty-state');
-  grid.textContent = '';
-  if (!profiles.length) { empty.hidden = false; return; }
-  empty.hidden = true;
+  const calm = $('empty-calm');
+  if (!grid) return;
 
-  const q = ($('profile-search').value || '').toLowerCase().trim();
-  const sort = $('sort-select').value;
-  let list = profiles.filter((p) => !q
-    || p.name.toLowerCase().includes(q)
-    || p.uid.toLowerCase().includes(q)
-    || (p.deviceLabel || '').toLowerCase().includes(q));
-  list = [...list].sort((a, b) => {
-    if (sort === 'oldest') return a.importedAt - b.importedAt;
-    if (sort === 'name') return a.name.localeCompare(b.name, 'fa');
-    if (sort === 'data') return (b.stats?.totalVisits || 0) - (a.stats?.totalVisits || 0);
-    return b.importedAt - a.importedAt;
-  });
+  if (state.loading) { renderSkeletons(); return; }
 
-  for (const p of list) {
-    const card = document.createElement('article');
-    card.className = 'profile-card';
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
+  const hasAny = state.profiles.length > 0;
+  if (empty) empty.hidden = hasAny || state.calm;
+  if (calm) calm.hidden = hasAny || !state.calm;
+  if (!hasAny) { grid.innerHTML = ''; $('list-count').textContent = ''; return; }
 
-    const sourceIcon = { telegram: '📨', upload: '📥', sample: '✨', paste: '📋' }[p.source] || '📥';
-    const head = document.createElement('div');
-    head.className = 'pc-head';
-    head.innerHTML = `
-      <div class="avatar">${esc(initials(p.name))}</div>
-      <div style="min-width:0">
-        <div class="pc-name">${esc(p.name)}</div>
-        <span class="pc-id">${esc(p.uid)}</span>
-      </div>
-      <span style="margin-inline-start:auto;font-size:16px" title="منبع: ${esc(p.source)}">${sourceIcon}</span>`;
+  const list = sortedFiltered();
+  $('list-count').textContent = list.length === state.profiles.length
+    ? `${faNum(list.length)} پروفایل`
+    : `${faNum(list.length)} از ${faNum(state.profiles.length)}`;
 
-    const stats = document.createElement('div');
-    stats.className = 'pc-stats';
-    for (const [v, l] of [
-      [faNum(p.stats?.domains || 0), 'دامنه'],
-      [faNum(p.stats?.searches || 0), 'جستجو'],
-      [faNum(p.stats?.totalVisits || 0), 'بازدید'],
-    ]) {
-      stats.insertAdjacentHTML('beforeend', `<div class="pc-stat"><b>${v}</b><span>${l}</span></div>`);
-    }
-
-    const foot = document.createElement('div');
-    foot.className = 'pc-foot';
-    foot.innerHTML = `
-      <span class="pc-date">${sourceIcon} ${faDate(p.importedAt)}</span>
-      <span class="${p.analyzed ? 'pc-badge-analyzed' : 'pc-badge-new'}">${p.analyzed ? '✓ تحلیل‌شده' : 'تحلیل نشده'}</span>`;
-
-    card.append(head, stats, foot);
-    card.addEventListener('click', () => { location.href = `/profile/${p.uid}`; });
-    card.addEventListener('keydown', (e) => { if (e.key === 'Enter') location.href = `/profile/${p.uid}`; });
-    grid.appendChild(card);
+  if (!list.length) {
+    grid.innerHTML = `<div class="notice">پروفایلی با این جستجو پیدا نشد — عبارت دیگری را امتحان کن.</div>`;
+    return;
   }
+
+  grid.innerHTML = list.map(cardHtml).join('');
+  grid.querySelectorAll('.profile-card').forEach((card) => {
+    const go = () => { location.href = `/profile/${card.dataset.uid}`; };
+    card.addEventListener('click', go);
+    card.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
 }
 
-$('profile-search').addEventListener('input', renderList);
-$('sort-select').addEventListener('change', renderList);
-
-// ───────────────────────── ایمپورت (آپلود فایل‌ها) ─────────────────────────
-async function importFiles(files) {
-  const fd = new FormData();
-  for (const f of files) fd.append('files', f);
-  const res = await fetch('/api/profiles/import', { method: 'POST', body: fd });
-  let data;
-  try { data = await res.json(); } catch { data = {}; }
-  if (res.status === 401) return location.href = '/login';
-  if (!res.ok) return toast(data.error || 'خطا در ایمپورت', 'err');
-
-  const added = data.added?.length || 0;
-  const failed = data.failed || [];
-  if (added) toast(`${faNum(added)} پروفایل اضافه شد ✅` + (failed.length ? ` • ${faNum(failed.length)} رد شد` : ''), 'ok');
-  else toast(failed[0]?.error || 'هیچ پروفایلی اضافه نشد', 'err');
-  for (const f of failed.slice(0, 3)) console.warn('import rejected:', f.file, '-', f.error);
-  await loadList();
-}
-
-$('import-file').addEventListener('change', async (e) => {
-  if (e.target.files?.length) await importFiles([...e.target.files]);
-  e.target.value = '';
-});
-
-const dropOverlay = $('drop-overlay');
-let dragDepth = 0;
-window.addEventListener('dragenter', (e) => { e.preventDefault(); dragDepth++; dropOverlay.hidden = false; });
-window.addEventListener('dragover', (e) => e.preventDefault());
-window.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; dropOverlay.hidden = true; } });
-window.addEventListener('drop', async (e) => {
-  e.preventDefault();
-  dragDepth = 0;
-  dropOverlay.hidden = true;
-  const files = [...(e.dataTransfer?.files || [])].filter((f) => f.name.endsWith('.json') || f.type === 'application/json');
-  if (files.length) await importFiles(files);
-  else toast('فقط فایل JSON پذیرفته می‌شود.', 'err');
-});
-$('dropzone').addEventListener('click', (e) => {
-  if (e.target.id === 'btn-import-sample' || e.target.closest('#btn-import-sample')) return;
-  $('import-file').click();
-});
-
-$('btn-import-sample')?.addEventListener('click', async (e) => {
-  e.stopPropagation();
+async function loadList() {
+  state.loading = true;
+  renderList();
   try {
-    await api('/api/profiles/import-sample', { method: 'POST' });
-    toast('پروفایل نمونه اضافه شد ✨', 'ok');
-    await loadList();
-  } catch (err) { toast(err.message, 'err'); }
-});
-
-// ───────────────────────── واکشی از تلگرام ─────────────────────────
-async function pollTelegram() {
-  const btn = $('btn-tg-poll');
-  btn.disabled = true;
-  const label = btn.querySelector('span');
-  const old = label.textContent;
-  label.textContent = 'در حال واکشی…';
-  try {
-    const r = await api('/api/telegram/poll', { method: 'POST' });
-    if (r.imported?.length) {
-      toast(`${faNum(r.imported.length)} فایل از تلگرام ایمپورت شد ✅`, 'ok');
-      await loadList();
-    } else if (r.errors?.length) {
-      toast(r.errors[0].error, 'err');
-    } else {
-      toast('فایل جدیدی در چت ربات نبود.', '');
-    }
-    updateTgStatus();
+    const data = await api('/api/profiles');
+    state.profiles = data.profiles || [];
   } catch (e) {
+    state.profiles = [];
     toast(e.message, 'err');
   } finally {
-    btn.disabled = false;
-    label.textContent = old;
+    state.loading = false;
+    renderList();
   }
 }
-$('btn-tg-poll').addEventListener('click', pollTelegram);
+
+// ───────────────────────────── ایمپورت ─────────────────────────────
+function importFilenames(files) {
+  const fd = new FormData();
+  for (const f of files) fd.append('files', f);
+  return fetch('/api/profiles/import', { method: 'POST', body: fd });
+}
+
+async function importFiles(files) {
+  if (!files.length) return;
+  toast(`در حال ایمپورت ${faNum(files.length)} فایل…`, 'info', 2000);
+  try {
+    const res = await importFilenames(files);
+    let data = {};
+    try { data = await res.json(); } catch { data = {}; }
+    if (res.status === 401) { location.href = '/login'; return; }
+    if (!res.ok) { toast(data.error || 'ایمپورت انجام نشد.', 'err'); return; }
+    const added = (data.added || []).length;
+    const failed = data.failed || [];
+    if (added) {
+      toast(`${faNum(added)} پروفایل اضافه شد${failed.length ? ` • ${faNum(failed.length)} فایل رد شد` : ''}`, 'ok');
+    } else {
+      toast(failed[0]?.error || 'هیچ پروفایلی اضافه نشد.', 'err', 5000);
+    }
+    if (failed.length) console.warn('import rejected:', failed);
+    await Promise.all([loadList(), loadStats()]);
+  } catch (e) {
+    toast('ارتباط با سرور برقرار نشد.', 'err');
+  }
+}
+
+function pickFiles() { $('import-file')?.click(); }
+
+async function importSample() {
+  try {
+    await api('/api/profiles/import-sample', { method: 'POST' });
+    toast('پروفایل نمونه اضافه شد', 'ok');
+    await Promise.all([loadList(), loadStats()]);
+  } catch (e) { toast(e.message, 'err'); }
+}
+
+// ───────────────────────────── تلگرام ─────────────────────────────
+function setTgDot(configured, pending = false) {
+  const dot = $('tg-dot');
+  if (!dot) return;
+  dot.className = 'dot ' + (pending ? 'dot--pending' : configured ? 'dot--on' : 'dot--off');
+  const btn = $('btn-tg-poll');
+  if (btn) btn.title = configured ? 'ربات متصل است — واکشی فایل‌های جدید' : 'ربات تلگرام هنوز تنظیم نشده است';
+}
 
 async function updateTgStatus() {
   try {
     const s = await api('/api/telegram/status');
-    $('tg-status').textContent = s.configured ? '🟢 ربات متصل' : '⚪ ربات تنظیم نشده';
-  } catch { /* noop */ }
+    state.telegramConfigured = !!s.configured;
+    setTgDot(!!s.configured);
+  } catch {
+    setTgDot(false);
+  }
 }
 
-// ───────────────────────── تنظیمات ─────────────────────────
-const modal = $('modal-settings');
-
-$('btn-settings').addEventListener('click', async () => {
+async function pollTelegram() {
+  setTgDot(state.telegramConfigured, true);
+  const btn = $('btn-tg-poll');
+  if (btn) App.btnLoading(btn, true, 'در حال واکشی…');
   try {
-    const s = await api('/api/settings');
-    $('ai-key-state').textContent = s.avalaiKeyMask ? `(ذخیره‌شده: ${s.avalaiKeyMask})` : '(تنظیم نشده)';
-    $('tg-state').textContent = s.tgConfigured ? '(تنظیم‌شده ✅)' : '(تنظیم نشده)';
-    const known = ['qwen3.8-flash', 'glm-5.3-flash', 'gemini-flash-latest', 'gpt-6-astra', 'claude-fable-5-1'];
-    $('set-model').value = known.includes(s.model) ? s.model : 'custom';
-    $('set-model-custom').hidden = $('set-model').value !== 'custom';
-    if ($('set-model').value === 'custom') $('set-model-custom').value = s.model || '';
-  } catch (e) { toast(e.message, 'err'); }
-  modal.hidden = false;
+    const r = await api('/api/telegram/poll', { method: 'POST' });
+    if ((r.imported || []).length) {
+      toast(`${faNum(r.imported.length)} فایل از تلگرام ایمپورت شد`, 'ok');
+      await Promise.all([loadList(), loadStats()]);
+    } else if ((r.errors || []).length) {
+      toast(r.errors[0].error || 'خطا در پردازش فایل‌ها', 'err');
+    } else {
+      toast('فایل جدیدی در چت ربات نبود.', 'info');
+    }
+    await updateTgStatus();
+  } catch (e) {
+    toast(e.message, 'err', 5000);
+    await updateTgStatus();
+  } finally {
+    if (btn) App.btnLoading(btn, false);
+  }
+}
+
+// ───────────────────────────── رویدادها ─────────────────────────────
+App.wireShell({ onTelegramFetch: pollTelegram });
+
+$('btn-add-user')?.addEventListener('click', pickFiles);
+$('fab-add')?.addEventListener('click', pickFiles);
+$('path-upload')?.addEventListener('click', pickFiles);
+$('path-telegram')?.addEventListener('click', pollTelegram);
+$('path-sample')?.addEventListener('click', importSample);
+$('dropzone')?.addEventListener('click', pickFiles);
+
+$('btn-tg-poll')?.addEventListener('click', pollTelegram);
+
+$('btn-calm')?.addEventListener('click', () => {
+  state.calm = true;
+  renderList();
+});
+$('btn-calm-back')?.addEventListener('click', () => {
+  state.calm = false;
+  renderList();
 });
 
-document.querySelectorAll('[data-close]').forEach((btn) =>
-  btn.addEventListener('click', () => { $(btn.dataset.close).hidden = true; }));
-document.querySelectorAll('.modal-backdrop').forEach((m) =>
-  m.addEventListener('click', (e) => { if (e.target === m) m.hidden = true; }));
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop').forEach((m) => { m.hidden = true; });
+$('import-file')?.addEventListener('change', async (e) => {
+  const files = [...(e.target.files || [])];
+  e.target.value = '';
+  await importFiles(files);
 });
 
-$('set-model').addEventListener('change', () => {
-  $('set-model-custom').hidden = $('set-model').value !== 'custom';
+$('profile-search')?.addEventListener('input', App.debounce(renderList, 120));
+$('sort-select')?.addEventListener('change', renderList);
+
+document.addEventListener('app:telegram-status', updateTgStatus);
+
+// درگ‌اند‌دراپ در کل پنجره
+const overlay = $('drop-overlay');
+const dropzone = $('dropzone');
+let dragDepth = 0;
+
+function isFileDrag(e) {
+  const types = e.dataTransfer?.types || [];
+  return [...types].includes('Files');
+}
+window.addEventListener('dragenter', (e) => {
+  if (!isFileDrag(e)) return;
+  e.preventDefault();
+  dragDepth += 1;
+  if (overlay) overlay.hidden = false;
+  dropzone?.classList.add('is-over');
+});
+window.addEventListener('dragover', (e) => { if (isFileDrag(e)) e.preventDefault(); });
+window.addEventListener('dragleave', () => {
+  if (dragDepth > 0) dragDepth -= 1;
+  if (dragDepth === 0) {
+    if (overlay) overlay.hidden = true;
+    dropzone?.classList.remove('is-over');
+  }
+});
+window.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dragDepth = 0;
+  if (overlay) overlay.hidden = true;
+  dropzone?.classList.remove('is-over');
+  const files = [...(e.dataTransfer?.files || [])]
+    .filter((f) => f.name.toLowerCase().endsWith('.json') || f.type === 'application/json');
+  if (!files.length) { toast('فقط فایل JSON پذیرفته می‌شود.', 'err'); return; }
+  await importFiles(files);
 });
 
-$('btn-save-ai').addEventListener('click', async () => {
-  const model = $('set-model').value === 'custom' ? $('set-model-custom').value.trim() : $('set-model').value;
-  try {
-    await api('/api/settings/avalai', { method: 'POST', body: JSON.stringify({ aiKey: $('set-ai-key').value.trim(), model }) });
-    $('set-ai-key').value = '';
-    toast('تنظیمات AI ذخیره شد ✅', 'ok');
-  } catch (e) { toast(e.message, 'err'); }
-});
-
-$('btn-test-ai').addEventListener('click', async () => {
-  const btn = $('btn-test-ai');
-  btn.disabled = true; btn.textContent = 'در حال تست…';
-  try {
-    const model = $('set-model').value === 'custom' ? $('set-model-custom').value.trim() : $('set-model').value;
-    const r = await api('/api/ai/test', { method: 'POST', body: JSON.stringify({ aiKey: $('set-ai-key').value.trim(), model }) });
-    toast(`اتصال موفق ✅ — ${r.sample}`, 'ok');
-  } catch (e) { toast(e.message, 'err'); }
-  finally { btn.disabled = false; btn.textContent = 'تست اتصال'; }
-});
-
-$('btn-save-tg').addEventListener('click', async () => {
-  try {
-    await api('/api/settings/telegram', {
-      method: 'POST',
-      body: JSON.stringify({ tgToken: $('set-tg-token').value.trim(), tgChatId: $('set-tg-chat').value.trim() }),
-    });
-    $('set-tg-token').value = '';
-    toast('اطلاعات ربات ذخیره شد ✅', 'ok');
-    updateTgStatus();
-  } catch (e) { toast(e.message, 'err'); }
-});
-
-$('btn-test-tg').addEventListener('click', async () => {
-  try {
-    await api('/api/telegram/test', { method: 'POST' });
-    toast('پیام تست ارسال شد 📨', 'ok');
-  } catch (e) { toast(e.message, 'err'); }
-});
-
-$('btn-save-pass').addEventListener('click', async () => {
-  const current = $('set-pass-current').value;
-  const newPass = $('set-pass-new').value;
-  if (newPass.length < 8) return toast('رمز جدید باید حداقل ۸ کاراکتر باشد.', 'err');
-  try {
-    await api('/api/settings/password', { method: 'POST', body: JSON.stringify({ current, new: newPass }) });
-    $('set-pass-current').value = '';
-    $('set-pass-new').value = '';
-    toast('رمز مدیر تغییر کرد ✅', 'ok');
-  } catch (e) { toast(e.message, 'err'); }
-});
-
-// ───────────────────────── شروع ─────────────────────────
-loadList();
+// ───────────────────────────── شروع ─────────────────────────────
+renderStatSkeleton();
+renderSkeletons();
 updateTgStatus();
+loadStats();
+loadList();
 
 })();

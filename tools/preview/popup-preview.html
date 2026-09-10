@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>پیش‌نمایش طراحی پاپ‌آپ — خریدار پرو</title>
+<style>
+  :root { color-scheme: light; --bg:#F7F3EC; --surface:#FFFDF9; --ink:#23211C; --ink2:#5A554A; --ink3:#6F6859;
+          --accent:#B25B32; --accent-solid:#A95427; --on-accent:#FFF7EF; --line:#E4DCCB; --line-strong:#D3C7AE;
+          --font:'Vazirmatn','IRANSans','Segoe UI',Tahoma,system-ui,sans-serif; --mono:ui-monospace,Consolas,monospace; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--ink);
+         min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  header { text-align: center; display: flex; flex-direction: column; gap: 6px; }
+  h1 { font-size: 20px; font-weight: 900; }
+  p.sub { font-size: 13px; color: var(--ink3); }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+         background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px; width: min(760px, 100%); }
+  .bar button { font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+                min-height: 36px; padding: 0 14px; border-radius: 10px;
+                background: var(--surface); color: var(--ink2); border: 1px solid var(--line); }
+  .bar button:hover { border-color: var(--line-strong); color: var(--accent); }
+  .bar button[aria-pressed="true"] { background: var(--accent-solid); border-color: var(--accent-solid); color: var(--on-accent); }
+  .stage { display: flex; gap: 20px; align-items: flex-start; flex-wrap: wrap; justify-content: center; }
+  .phone { width: 400px; height: 600px; border-radius: 18px; overflow: hidden; background: var(--surface);
+           border: 1px solid var(--line-strong); box-shadow: 0 10px 24px rgba(64,48,26,.14), 0 28px 64px rgba(64,48,26,.18); }
+  iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .notes { width: min(360px, 100%); display: flex; flex-direction: column; gap: 10px;
+           background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .notes h2 { font-size: 14px; font-weight: 800; }
+  .notes ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .notes li { font-size: 12.5px; color: var(--ink2); line-height: 1.9; padding-inline-start: 14px; position: relative; }
+  .notes li::before { content: ''; position: absolute; inset-inline-start: 0; top: 9px; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  code { font-family: var(--mono); font-size: 11.5px; background: var(--bg); padding: 1px 5px; border-radius: 6px; border: 1px solid var(--line); }
+  footer { font-size: 11.5px; color: var(--ink3); text-align: center; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>پیش‌نمایش طراحی پاپ‌آپ «خریدار پرو»</h1>
+    <p class="sub">همان فایل‌های واقعی افزونه (<code>popup.html</code> / <code>popup.css</code> / <code>popup.js</code>) داخل قاب ۴۰۰×۶۰۰ — با دادهٔ نمونه.</p>
+  </header>
+
+  <div class="bar" role="group" aria-label="انتخاب صفحه">
+    <button type="button" data-state="welcome">۱. خوش‌آمد و افشا</button>
+    <button type="button" data-state="setup">۲. پیکربندی</button>
+    <button type="button" data-state="unlock">۳. قفل رمزنگاری</button>
+    <button type="button" data-state="chat">۴. گفتگو</button>
+    <button type="button" data-panel="settings">مودال تنظیمات (روی گفتگو)</button>
+  </div>
+
+  <div class="stage">
+    <div class="phone"><iframe id="frame" title="پاپ‌آپ افزونه" src="/popup-frame.html?state=chat"></iframe></div>
+    <aside class="notes">
+      <h2>چه چیزی را ببینید</h2>
+      <ul>
+        <li>تم روشن/تیره/سیستم را از «تنظیمات ← عمومی» عوض کنید؛ انتخاب ذخیره می‌شود و به سیستم هم احترام می‌گذارد.</li>
+        <li>حالت بارگذاری تحلیل (مراحل + اسکلتون)، تایپ‌ایندیکیتور، کارت محصول، چیپ فروشگاه‌ها و توست آیکون‌دار.</li>
+        <li>چشمی رمز، سوییچ تلگرام، آکاردئون حریم خصوصی و چهار عدد خلاصهٔ حریم خصوصی با ارقام فارسی.</li>
+        <li>هیچ ایموجی و هیچ گرادیان بنفش/آبی‌ای در UI نمانده؛ آیکون‌ها خطی SVG با ضخامت ۱.۸ هستند.</li>
+      </ul>
+      <p class="sub">این صفحه فقط ابزار توسعه است و داخل بستهٔ افزونه (Web Store) نمی‌رود.</p>
+    </aside>
+  </div>
+
+  <footer>سرور پیش‌نمایش: <code>node tools/preview/serve.mjs</code></footer>
+
+<script>
+(function () {
+  'use strict';
+  var frame = document.getElementById('frame');
+  var state = 'chat';
+  function render() {
+    document.querySelectorAll('[data-state]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.state === state));
+    });
+  }
+  document.querySelectorAll('[data-state]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      state = btn.dataset.state;
+      frame.src = '/popup-frame.html?state=' + encodeURIComponent(state);
+      render();
+    });
+  });
+  document.querySelector('[data-panel="settings"]').addEventListener('click', function () {
+    if (state !== 'chat') { state = 'chat'; frame.src = '/popup-frame.html?state=chat'; render(); }
+    var win = frame.contentWindow;
+    var tries = 0;
+    var open = function () {
+      var btn = win && win.document && win.document.getElementById('btn-settings');
+      if (btn) { btn.click(); return; }
+      if (tries++ < 40) setTimeout(open, 100);
+    };
+    setTimeout(open, 300);
+  });
+  render();
+})();
+</script>
+</body>
+</html>
