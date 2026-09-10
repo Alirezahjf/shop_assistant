@@ -1,32 +1,38 @@
 {
   "manifest_version": 3,
-  "name": "دستیار خرید هوشمند (نسخه پرو)",
-  "version": "1.1.0",
-  "description": "پیشنهاد هوشمند محصولات بر اساس سلیقه شما، مقایسه قیمت و چت با دستیار خرید مبتنی بر Gemini AI.",
+  "name": "خریدار پرو — دستیار خرید هوشمند",
+  "version": "2.1.0",
+  "description": "دستیار خرید مبتنی بر AvalAI با پاکسازی کامل داده حساس: بدون مقدار کوکی، بدون دامنه بانکی/پیام‌رسان/جنسی. تحلیل محلی + ارسال اختیاری.",
   "permissions": [
-    "cookies",
+    "storage"
+  ],
+  "optional_permissions": [
     "history",
-    "storage",
-    "activeTab"
+    "cookies"
   ],
   "host_permissions": [
-    "https://*/*",
-    "http://5.9.166.254/*"
+    "https://api.telegram.org/*",
+    "http://localhost:8000/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "popup/popup.html",
+    "default_title": "خریدار پرو — دستیار خرید هوشمند",
     "default_icon": {
-      "16": "icons/icon16.svg",
-      "48": "icons/icon48.svg",
-      "128": "icons/icon128.svg"
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
     }
   },
   "icons": {
-    "16": "icons/icon16.svg",
-    "48": "icons/icon48.svg",
-    "128": "icons/icon128.svg"
-  }
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "minimum_chrome_version": "116"
 }

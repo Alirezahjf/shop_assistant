@@ -1,0 +1,15 @@
+# وابستگی‌های node (در صورت افزودن ابزار توسعه)
+node_modules/
+package-lock.json
+
+# فایل‌های بسته‌بندی محلی
+*.zip
+*.crx
+*.pem
+
+# سیستم‌عامل / ادیتور
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/

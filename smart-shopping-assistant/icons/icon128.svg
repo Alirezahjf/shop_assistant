@@ -1,5 +1,0 @@
-<!-- icons/icon16.svg, icons/icon48.svg, icons/icon128.svg -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#667eea">
-  <path d="M11 9h2v2h-2zm-2 2h2v2H9zm4 0h2v2h-2zm2-2h2v2h-2z"/>
-  <path d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-6-2c1.1 0 2 .9 2 2h-4c0-1.1.9-2 2-2zm6 16H6V8h2v2c0 .55.45 1 1 1h6c.55 0 1-.45 1-1V8h2v12z"/>
-</svg>
