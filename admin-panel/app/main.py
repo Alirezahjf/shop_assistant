@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from . import analysis, avalai, db, extproxy, security
-from .config import AVALAI_API_KEY, AVALAI_MODEL, APP_NAME, COOKIE_SECURE
+from .config import AVALAI_API_KEY, AVALAI_KNOWN_MODELS, AVALAI_MODEL, APP_NAME, COOKIE_SECURE
 from .security import SESSION_COOKIE
 from .interests import compute_interests, search_matches_category
 from .sanitize import ImportValidationError, is_likely_snapshot_filename, parse_json_file, validate_and_clean, final_scrub
@@ -540,7 +540,13 @@ async def ext_chat(request: Request):
     except extproxy.ProxyError as e:
         return JSONResponse({"ok": False, "error": str(e)}, status_code=e.status)
     except avalai.AvalAiError as e:
-        status = 503 if e.retryable else 502
+        # نگاشت دقیق کدهای مستندات به پاسخ (۴۰۲ اعتبار، ۴۰۴ مدل، ۴۲۹ محدودیت نرخ…)
+        if e.status and 400 <= e.status < 500 and not e.retryable:
+            status = e.status
+        elif e.retryable:
+            status = 429 if e.status == 429 else 503
+        else:
+            status = 502
         return JSONResponse({"ok": False, "error": str(e)}, status_code=status)
     return {"ok": True, "reply": result["reply"]}
 
@@ -549,3 +555,32 @@ async def ext_chat(request: Request):
 async def ext_ping():
     """بررسی سلامت سرویس برای افزونه (بدون مصرف توکن)."""
     return {"ok": True, "service": "kharidar-pro", "proxyEnabled": extproxy.EXT_PROXY_ENABLED}
+
+
+@app.get("/api/ext/models")
+async def ext_models():
+    """
+    «افزودنی» — فهرست مدل‌های AvalAI برای افزونه (بدون احراز هویت پنل).
+    مستندات: GET /v1/models (با کلید) و GET /public/models (بدون کلید).
+    اگر هیچ‌کدام در دسترس نبود، فهرست ایستای هم‌تراز با مستندات برمی‌گردد.
+    شکل پاسخ: {"ok": true, "models": [{"id": "..."}], "source": "avalai|public|static"}
+    """
+    key = security.get_secret("avalai_key") or AVALAI_API_KEY
+    models = avalai.list_models(key)
+    if models:
+        return {"ok": True, "models": models, "source": "avalai" if key else "public"}
+    return {"ok": True, "models": [{"id": m} for m in AVALAI_KNOWN_MODELS], "source": "static"}
+
+
+@app.get("/api/models")
+async def api_models(_: None = Depends(require_admin)):
+    """
+    «افزودنی» — فهرست مدل‌ها برای مودال تنظیمات پنل (نیازمند نشست مدیر).
+    از /v1/models با کلیدِ ذخیره‌شده پر می‌شود و در صورت عدم دسترسی به فهرست
+    ایستای مستندات برمی‌گردد.
+    """
+    key = security.get_secret("avalai_key") or AVALAI_API_KEY
+    models = avalai.list_models(key)
+    if models:
+        return {"ok": True, "models": models, "source": "avalai" if key else "public"}
+    return {"ok": True, "models": [{"id": m} for m in AVALAI_KNOWN_MODELS], "source": "static"}

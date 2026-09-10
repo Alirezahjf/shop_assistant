@@ -46,8 +46,26 @@ DB_PATH = DATA_DIR / "admin_panel.db"
 
 # --- AvalAI (اختیاری: می‌توانید از UI تنظیمات هم وارد کنید) ---
 AVALAI_API_KEY = os.environ.get("AVALAI_API_KEY", "")
+# مدل پیش‌فرض: از فهرست مدل‌های مستندات (docs.avalai.ir/en/models)
+# qwen3.8-flash — ارزان، سریع، دارای reasoning (پیشنهادی برای دستیار خرید)
 AVALAI_MODEL = os.environ.get("AVALAI_MODEL", "qwen3.8-flash")
-AVALAI_BASE_URL = "https://api.avalai.ir/v1"
+# مستندات quickstart: «Primary Domain - Recommended: api.avalai.ir»
+AVALAI_BASE_URL = os.environ.get("AVALAI_BASE_URL", "https://api.avalai.ir/v1")
+# مستندات quickstart: فهرست عمومی مدل‌ها بدون احراز هویت
+AVALAI_PUBLIC_MODELS_URL = "https://api.avalai.ir/public/models"
+
+# فهرست پیشنهادیِ هم‌تراز با مستندات (فقط برای fallback آفلاین در UI)
+# ⚠️ claude-fable-5-1 طبق مستندات نیازمند «Tier 2 یا بالاتر» است؛ برای حساب‌های
+# عادی ۴۰۱/۴۰۳ می‌دهد، بنابراین از پیش‌فرض‌ها کنار گذاشته شده است.
+AVALAI_KNOWN_MODELS = [
+    "qwen3.8-flash",
+    "glm-5.3-flash",
+    "gemini-3.8-flash",
+    "nemotron-3.5-lightning",
+    "qwen3.8-27b",
+    "deepseek-v4-flash",
+    "gpt-6-astra",
+]
 
 # --- پروکسی افزونه (کاربران نهایی بدون کلید، از کلید سرور استفاده می‌کنند) ---
 EXT_PROXY_ENABLED = os.environ.get("EXT_PROXY_ENABLED", "true").lower() == "true"

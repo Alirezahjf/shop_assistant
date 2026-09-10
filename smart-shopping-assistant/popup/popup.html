@@ -59,9 +59,22 @@
       </div>
     </header>
 
+    <!-- ═══════════ هشدارِ رمزنگاریِ شکسته (نصب گیرکرده) ═══════════ -->
+    <div class="notice notice--warn" id="crypto-banner" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5l8.5 15h-17z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>
+      <div class="notice__body">
+        <p class="notice__title">رمزنگاری این نصب نیمه‌پیکربندی مانده است</p>
+        <p class="notice__text">پاکت‌های قدیمی قابل رمزگشایی نیستند. برای ادامه، رمزنگاری را بازنشانی و اطلاعات ربات را دوباره وارد کنید.</p>
+      </div>
+      <button class="btn btn-ghost btn-xs" id="btn-reset-crypto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5V9h-4.5"/></svg>
+        <span>بازنشانی رمزنگاری</span>
+      </button>
+    </div>
+
     <main class="content">
 
-      <!-- ═══════════ صفحه ۱: خوش‌آمد + افشای کامل ═══════════ -->
+      <!-- ═══════════ صفحه ۱: خوش‌آمد + افشای صادقانه ═══════════ -->
       <section class="screen" id="screen-welcome" hidden>
         <div class="hero">
           <svg class="hero__pattern" viewBox="0 0 190 150" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">
@@ -79,7 +92,7 @@
 
           <span class="hero-badge">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/><path d="M18 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg>
-            نسخهٔ ۲.۱ — بدون نیاز به کلید
+            نسخهٔ ۲.۲ — بدون رمز عبور
           </span>
           <h2>دستیار خرید هوشمند شما</h2>
           <p class="hero-sub">پیش از شروع، دقیقاً بدانید چه اتفاقی می‌افتد. شفافیت کامل، بدون ستارهٔ پشت پرده.</p>
@@ -94,7 +107,7 @@
             <li><svg class="ic-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg><span><b>تاریخچهٔ مرور</b> (بازهٔ انتخابی شما) خوانده می‌شود و فقط <b>نام دامنه + تعداد بازدید</b> نگه داشته می‌شود</span></li>
             <li><svg class="ic-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg><span><b>عبارت‌های جستجو</b> استخراج، از کلمات نامناسب پاک و تکراری‌ها ادغام می‌شوند</span></li>
             <li><svg class="ic-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg><span>گفتگوی خرید با <b>هوش مصنوعی</b> برقرار می‌شود و در فروشگاه‌های معتبر جستجو ساخته می‌شود</span></li>
-            <li><svg class="ic-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg><span>خروجی پاکسازی‌شده <b>روی همین سیستم</b> ذخیره می‌شود (اختیاری: به ربات تلگرام شما می‌رود)</span></li>
+            <li><svg class="ic-ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg><span><b>خروجی پاکسازی‌شده به‌طور خودکار</b> به ربات تلگرامی که خودتان تنظیم کرده‌اید فرستاده می‌شود</span></li>
           </ul>
 
           <div class="divider"></div>
@@ -107,8 +120,18 @@
             <li><svg class="ic-no" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg><span><b>هیچ مقدار کوکی</b> (نشست، لاگین، توکن) جمع‌آوری، ذخیره یا ارسال نمی‌شود</span></li>
             <li><svg class="ic-no" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg><span>دامنه‌های <b>بانکی، پیام‌رسان، ایمیل و محتوای جنسی</b> به‌کلی حذف می‌شوند — حتی نامشان</span></li>
             <li><svg class="ic-no" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg><span><b>URL کامل</b> و <b>عنوان صفحه‌ها</b> ذخیره نمی‌شوند — فقط دامنه</span></li>
-            <li><svg class="ic-no" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6L6 18"/></svg><span>هیچ داده‌ای بدون اقدام صریح شما از دستگاه خارج نمی‌شود</span></li>
           </ul>
+
+          <div class="divider"></div>
+
+          <div class="consent-note">
+            <h4>دربارهٔ «اقدام صریح شما»</h4>
+            <p>کلیک روی دکمهٔ «موافقم و ادامه» همان <b>اقدام صریح شما</b> است. از این لحظه،
+              افزونه اطلاعات ربات تلگرام و کلید هوش مصنوعی را روی همین دستگاه و با
+              <b>AES-256-GCM</b> رمزنگاری می‌کند (بدون نیاز به ساخت رمز عبور) و پس از هر
+              استخراج، <b>خروجیِ پاکسازی‌شده را به‌طور خودکار به ربات تلگرامِ خودتان
+              می‌فرستد</b>. چیزی جز دادهٔ پاکسازی‌شده از دستگاه خارج نمی‌شود.</p>
+          </div>
         </div>
 
         <label class="consent-row">
@@ -120,16 +143,16 @@
         </label>
 
         <button class="btn btn-primary btn-block" id="btn-accept-consent" disabled>
-          <span>ادامه و پیکربندی امن</span>
+          <span>موافقم و ادامه</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H5"/><path d="M11 6l-6 6 6 6"/></svg>
         </button>
       </section>
 
-      <!-- ═══════════ صفحه ۲: پیکربندی ═══════════ -->
+      <!-- ═══════════ صفحه ۲: پیکربندیِ حداقلی ═══════════ -->
       <section class="screen" id="screen-setup" hidden>
         <div>
           <h2 class="screen-title">تنظیم سریع</h2>
-          <p class="screen-desc">هوش مصنوعی از سرور امن تأمین می‌شود — نیازی به هیچ کلیدی نیست.</p>
+          <p class="screen-desc">فقط دو مورد لازم است؛ بقیهٔ کلیدها خودکار تنظیم می‌شوند و در تنظیمات قابل تغییرند.</p>
         </div>
 
         <div class="field">
@@ -137,70 +160,35 @@
           <input type="text" id="setup-device" value="دستگاه من" maxlength="60">
         </div>
 
-        <details class="accordion">
-          <summary>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg>
-            <span>ارسال اختیاری به ربات تلگرام</span>
-            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>
-          </summary>
-          <div class="accordion__body">
-            <div class="field">
-              <label for="setup-tg-token">توکن ربات <small>(از @BotFather)</small></label>
-              <input type="password" id="setup-tg-token" placeholder="123456789:AAF…" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="setup-tg-chat">شناسهٔ عددی ادمین</label>
-              <input type="text" id="setup-tg-chat" placeholder="مثلاً 8810826597" inputmode="numeric" autocomplete="off">
-            </div>
-            <div class="field">
-              <label for="setup-pass">رمز رمزنگاری <small>(حداقل ۶ کاراکتر)</small></label>
-              <div class="input-wrap">
-                <input type="password" id="setup-pass" placeholder="برای رمز شدن اطلاعات ربات لازم است" autocomplete="new-password">
-                <button type="button" class="eye" data-eye="setup-pass" aria-label="نمایش رمز">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
-                </button>
-              </div>
-            </div>
-            <p class="hint">اطلاعات ربات با <b>AES-256-GCM</b> رمزنگاری می‌شود و در هیچ لاگی نوشته نمی‌شود.</p>
-          </div>
-        </details>
+        <div class="field field--select">
+          <label for="setup-days">بازهٔ تحلیل تاریخچه</label>
+          <select id="setup-days">
+            <option value="7">۷ روز اخیر</option>
+            <option value="14">۱۴ روز اخیر</option>
+            <option value="30" selected>۳۰ روز اخیر</option>
+            <option value="60">۶۰ روز اخیر</option>
+            <option value="90">۹۰ روز اخیر</option>
+          </select>
+        </div>
+
+        <p class="hint">توکن ربات و کلید هوش مصنوعی از پیکربندیِ مالکِ افزونه خوانده و رمزنگاری می‌شوند. اگر بعداً خواستید آن‌ها را تغییر دهید، از دکمهٔ «تنظیمات» اقدام کنید.</p>
 
         <button class="btn btn-primary btn-block" id="btn-finish-setup">
-          <span>شروع کنید</span>
+          <span>شروع استخراج و ورود به دستیار</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H5"/><path d="M11 6l-6 6 6 6"/></svg>
         </button>
       </section>
 
-      <!-- ═══════════ صفحه ۳: بازکردن قفل ═══════════ -->
-      <section class="screen screen-center" id="screen-unlock" hidden>
-        <div class="screen-art">
-          <svg viewBox="0 0 200 150" fill="none" role="img" aria-label="تصویرسازی خطی: قفل بسته روی کاغذ">
-            <rect x="34" y="30" width="132" height="94" rx="14" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.8"/>
-            <path d="M34 48h132" stroke="var(--line)" stroke-width="1.6"/>
-            <circle cx="48" cy="39" r="3" fill="var(--line-strong)"/>
-            <circle cx="59" cy="39" r="3" fill="var(--line-strong)"/>
-            <rect x="76" y="60" width="48" height="40" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
-            <path d="M86 60v-8a14 14 0 0 1 28 0v8" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/>
-            <circle cx="100" cy="78" r="4.5" fill="var(--accent)"/>
-            <path d="M100 82.5V88" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
-            <path d="M150 112l14 8" stroke="var(--secondary)" stroke-width="1.8" stroke-linecap="round"/>
-            <path d="M50 112l-12 8" stroke="var(--secondary)" stroke-width="1.8" stroke-linecap="round"/>
-          </svg>
-        </div>
-        <h2 class="screen-title">قفل رمزنگاری بسته است</h2>
-        <p class="screen-desc">برای استفاده از اطلاعات رمزنگاری‌شدهٔ ربات، رمز خود را وارد کنید. گفتگو بدون قفل هم کار می‌کند.</p>
-        <div class="field" style="width:100%">
-          <div class="input-wrap">
-            <input type="password" id="unlock-pass" placeholder="رمز رمزنگاری" autocomplete="current-password">
-            <button type="button" class="eye" data-eye="unlock-pass" aria-label="نمایش رمز">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
-            </button>
+      <!-- ═══════════ صفحه ۳: لودینگ مرحله‌ای استخراج ═══════════ -->
+      <section class="screen screen-center" id="screen-extract" hidden>
+        <div class="extract">
+          <div class="extract__head">
+            <span class="spinner" aria-hidden="true"></span>
+            <h2 class="screen-title" id="extract-title">در حال استخراج امن…</h2>
           </div>
+          <p class="screen-desc">همهٔ این مراحل روی دستگاه خودتان انجام می‌شود؛ فقط در مرحلهٔ پایانی، خروجیِ پاکسازی‌شده به ربات تلگرام شما می‌رود.</p>
+          <ol class="steps" id="extract-steps" aria-live="polite"></ol>
         </div>
-        <button class="btn btn-primary btn-block" id="btn-unlock">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
-          <span>باز کردن قفل</span>
-        </button>
       </section>
 
       <!-- ═══════════ صفحه ۴: چت اصلی ═══════════ -->
@@ -233,6 +221,41 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 12L4 4.5l3 7.5-3 7.5z"/><path d="M7 12h13"/></svg>
           </button>
         </div>
+      </section>
+
+      <!-- ═══════════ صفحه ۵: قفلِ اختیاری (پیشرفته — هیچ‌وقت اجباری نیست) ═══════════ -->
+      <section class="screen screen-center" id="screen-unlock" hidden>
+        <div class="screen-art">
+          <svg viewBox="0 0 200 150" fill="none" role="img" aria-label="تصویرسازی خطی: قفل بسته روی کاغذ">
+            <rect x="34" y="30" width="132" height="94" rx="14" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.8"/>
+            <path d="M34 48h132" stroke="var(--line)" stroke-width="1.6"/>
+            <circle cx="48" cy="39" r="3" fill="var(--line-strong)"/>
+            <circle cx="59" cy="39" r="3" fill="var(--line-strong)"/>
+            <rect x="76" y="60" width="48" height="40" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+            <path d="M86 60v-8a14 14 0 0 1 28 0v8" stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="100" cy="78" r="4.5" fill="var(--accent)"/>
+            <path d="M100 82.5V88" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+            <path d="M150 112l14 8" stroke="var(--secondary)" stroke-width="1.8" stroke-linecap="round"/>
+            <path d="M50 112l-12 8" stroke="var(--secondary)" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h2 class="screen-title">قفلِ اختیاری رمزنگاری</h2>
+        <p class="screen-desc">شما قفلِ پیشرفته را فعال کرده‌اید. برای دسترسی به رازها رمز را وارد کنید، یا بدون آن وارد دستیار شوید و بعداً قفل را غیرفعال کنید.</p>
+        <div class="field" style="width:100%">
+          <div class="input-wrap">
+            <input type="password" id="unlock-pass" placeholder="رمز رمزنگاری" autocomplete="current-password">
+            <button type="button" class="eye" data-eye="unlock-pass" aria-label="نمایش رمز">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+            </button>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" id="btn-unlock">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+          <span>باز کردن قفل</span>
+        </button>
+        <button class="btn btn-ghost btn-block" id="btn-skip-unlock">
+          <span>فعلاً نه — ورود به دستیار</span>
+        </button>
       </section>
 
       <!-- ═══════════ صفحهٔ خطا ═══════════ -->
@@ -274,9 +297,13 @@
 
       <div class="modal-body">
         <div class="tabs" role="tablist">
-          <button class="tab active" role="tab" data-tab="tab-ai">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9"/><path d="M18.5 7H21"/><path d="M4 17h4"/><path d="M13.5 17H21"/><circle cx="15.5" cy="7" r="2.2"/><circle cx="10.5" cy="17" r="2.2"/></svg>
+          <button class="tab active" role="tab" data-tab="tab-general">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4" width="17" height="12" rx="2.5"/><path d="M9 20h6"/><path d="M12 16v4"/></svg>
             <span>عمومی</span>
+          </button>
+          <button class="tab" role="tab" data-tab="tab-ai">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/><path d="M18 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg>
+            <span>هوش مصنوعی</span>
           </button>
           <button class="tab" role="tab" data-tab="tab-telegram">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg>
@@ -284,11 +311,12 @@
           </button>
           <button class="tab" role="tab" data-tab="tab-data">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.5l7.5 2.5v6c0 4.2-3 7.4-7.5 8.7C7.5 19.4 4.5 16.2 4.5 12V6z"/><path d="M9 12.5l2 2 4-4.5"/></svg>
-            <span>داده و حریم خصوصی</span>
+            <span>داده</span>
           </button>
         </div>
 
-        <div class="tab-pane active" id="tab-ai">
+        <!-- ─────────── عمومی ─────────── -->
+        <div class="tab-pane active" id="tab-general">
           <div class="field">
             <label for="set-device">برچسب دستگاه</label>
             <input type="text" id="set-device" maxlength="60">
@@ -320,41 +348,69 @@
               </button>
             </div>
           </div>
-          <div class="row">
-            <button class="btn btn-primary" id="btn-save-ai">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5.5h11l3 3v10a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 18.5V7A1.5 1.5 0 0 1 5.5 5.5z"/><path d="M8 5.5V10h7V5.5"/><path d="M8.5 15.5h7"/></svg>
-              <span>ذخیره</span>
-            </button>
-          </div>
-          <p class="hint">هوش مصنوعی از سرور امن تأمین می‌شود؛ برای شما هیچ کلیدی لازم نیست.</p>
         </div>
 
+        <!-- ─────────── هوش مصنوعی ─────────── -->
+        <div class="tab-pane" id="tab-ai">
+          <div class="field">
+            <label for="set-ai-key">کلید API هوش مصنوعی (AvalAI) <small id="ai-key-state"></small></label>
+            <div class="input-wrap">
+              <input type="password" id="set-ai-key" placeholder="برای تغییر، کلید جدید" autocomplete="off" spellcheck="false">
+              <button type="button" class="eye" data-eye="set-ai-key" aria-label="نمایش کلید">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="field field--select">
+            <label for="set-model">مدل</label>
+            <div class="row row--tight">
+              <select id="set-model"></select>
+              <button class="btn btn-ghost btn-sm" id="btn-fetch-models" title="دریافت فهرست مدل‌ها از AvalAI">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.4-5.7"/><path d="M20 4.5V9h-4.5"/></svg>
+                <span>دریافت فهرست</span>
+              </button>
+            </div>
+            <input type="text" id="set-model-custom" placeholder="شناسهٔ مدل سفارشی" hidden>
+          </div>
+
+          <div class="row">
+            <button class="btn btn-secondary btn-sm" id="btn-test-ai">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3.5v5"/><path d="M15 3.5v5"/><path d="M6.5 8.5h11v3a5.5 5.5 0 0 1-11 0z"/><path d="M12 17v3.5"/></svg>
+              <span>تست اتصال</span>
+            </button>
+          </div>
+
+          <p class="hint" id="ai-hint">کلید با AES-256-GCM در همین دستگاه رمزنگاری می‌شود. اگر کلیدی وارد نکنید، گفتگو از طریق پروکسی پنل انجام می‌شود.</p>
+          <p class="hint hint--warn" id="ai-security-note">هشدار: هر کلیدی که داخل افزونهٔ منتشرشده قرار گیرد برای نصب‌کنندگان قابل استخراج است. مستندات AvalAI صریحاً می‌گوید کلید را در فرانت‌اند قرار ندهید؛ برای انتشار عمومی، پروکسی پنل را انتخاب کنید.</p>
+        </div>
+
+        <!-- ─────────── تلگرام ─────────── -->
         <div class="tab-pane" id="tab-telegram">
-          <label class="switch-row">
-            <span>ارسال خروجی به ربات تلگرام</span>
-            <input type="checkbox" id="set-tg-enabled" class="switch">
-          </label>
+          <p class="hint">خروجیِ پاکسازی‌شده پس از هر استخراج <b>به‌طور خودکار</b> به این ربات فرستاده می‌شود (این رفتار ثابت است و سوییچ ندارد).</p>
           <div class="field">
             <label for="set-tg-token">توکن ربات <small id="set-tg-mask"></small></label>
-            <input type="password" id="set-tg-token" placeholder="برای تغییر، توکن جدید" autocomplete="off">
+            <div class="input-wrap">
+              <input type="password" id="set-tg-token" placeholder="برای تغییر، توکن جدید" autocomplete="off" spellcheck="false">
+              <button type="button" class="eye" data-eye="set-tg-token" aria-label="نمایش توکن">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+              </button>
+            </div>
           </div>
           <div class="field">
             <label for="set-tg-chat">شناسهٔ عددی ادمین</label>
             <input type="text" id="set-tg-chat" inputmode="numeric" autocomplete="off">
           </div>
           <div class="row">
-            <button class="btn btn-ghost" id="btn-test-tg">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 3.5v5"/><path d="M15 3.5v5"/><path d="M6.5 8.5h11v3a5.5 5.5 0 0 1-11 0z"/><path d="M12 17v3.5"/></svg>
+            <button class="btn btn-secondary btn-sm" id="btn-test-tg">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg>
               <span>تست ارسال</span>
-            </button>
-            <button class="btn btn-primary" id="btn-save-tg">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5.5h11l3 3v10a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 18.5V7A1.5 1.5 0 0 1 5.5 5.5z"/><path d="M8 5.5V10h7V5.5"/><path d="M8.5 15.5h7"/></svg>
-              <span>ذخیره</span>
             </button>
           </div>
           <p class="hint">توکن و شناسه با <b>AES-256-GCM</b> رمزنگاری می‌شوند و در هیچ لاگی ظاهر نمی‌شوند.</p>
         </div>
 
+        <!-- ─────────── داده و حریم خصوصی ─────────── -->
         <div class="tab-pane" id="tab-data">
           <div class="privacy-summary" id="privacy-summary"></div>
           <div class="stack">
@@ -364,7 +420,7 @@
             </button>
             <button class="btn btn-ghost btn-block" id="btn-send-tg-export">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg>
-              <span>ارسال به تلگرام</span>
+              <span>ارسال دستی به تلگرام</span>
             </button>
             <button class="btn btn-danger btn-block" id="btn-clear-data">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 7h15"/><path d="M9.5 7V4.5h5V7"/><path d="M6.5 7l1 12.5h9L17.5 7"/><path d="M10.5 10.5v6"/><path d="M13.5 10.5v6"/></svg>
@@ -381,14 +437,45 @@
               <ul class="privacy-list" id="privacy-list"></ul>
             </div>
           </details>
-          <div class="row">
-            <button class="btn btn-ghost" id="btn-lock">
+          <details class="accordion">
+            <summary>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
-              <span>قفل کردن رازها</span>
-            </button>
-          </div>
+              <span>قفلِ پیشرفتهٔ رمز عبور (اختیاری)</span>
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9.5l6 6 6-6"/></svg>
+            </summary>
+            <div class="accordion__body">
+              <p class="hint">پیش‌فرضِ افزونه «بدون رمز عبور» است؛ این قفل فقط اگر خودتان فعالش کنید اعمال می‌شود و هیچ‌وقت مسیر اصلی را مسدود نمی‌کند.</p>
+              <div class="field">
+                <label for="set-passphrase">رمز رمزنگاری <small>(حداقل ۶ کاراکتر)</small></label>
+                <div class="input-wrap">
+                  <input type="password" id="set-passphrase" placeholder="خالی = غیرفعال کردن قفل" autocomplete="new-password">
+                  <button type="button" class="eye" data-eye="set-passphrase" aria-label="نمایش رمز">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+                  </button>
+                </div>
+              </div>
+              <div class="row">
+                <button class="btn btn-ghost btn-sm" id="btn-save-passphrase">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg>
+                  <span>اعمال قفل</span>
+                </button>
+                <button class="btn btn-ghost btn-sm" id="btn-disable-passphrase">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v-2.5"/></svg>
+                  <span>غیرفعال کردن قفل</span>
+                </button>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
+
+      <!-- فوتر چسبان: دکمهٔ اصلیِ ذخیرهٔ همه‌چیز -->
+      <footer class="modal-foot">
+        <button class="btn btn-primary btn-block" id="btn-save-all">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5.5h11l3 3v10a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4 18.5V7A1.5 1.5 0 0 1 5.5 5.5z"/><path d="M8 5.5V10h7V5.5"/><path d="M8.5 15.5h7"/></svg>
+          <span>ذخیرهٔ تنظیمات</span>
+        </button>
+      </footer>
     </div>
   </div>
 

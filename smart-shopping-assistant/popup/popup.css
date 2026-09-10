@@ -648,3 +648,125 @@ svg { display: block; flex: none; }
 .message .spinner { width: 16px; height: 16px; }
 .sb-item { display: inline-flex; align-items: center; gap: 4px; }
 .snapshot-bar__text { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+
+/* ============================================================================
+   افزوده‌های ۲.۲ — المان‌های جدید + قواعد ریسپانسیو/لمسی
+   هویت رنگی دست‌نخورده: همان توکن‌های «کاغذ کاهی و مُس»، بدون گرادیان
+   بنفش/آبی و بدون ایموجی.
+   ============================================================================ */
+
+/* ── هشدارِ بالای صفحه (نصبِ نیمه‌پیکربندی‌شده) ─────────────────────── */
+.notice {
+  display: flex; align-items: flex-start; gap: var(--s-2);
+  margin: var(--s-2) var(--s-3) 0; padding: var(--s-3);
+  border: 1px solid var(--line); border-radius: var(--r-1);
+  background: var(--surface); box-shadow: var(--shadow-1);
+}
+.notice > svg { width: 18px; height: 18px; flex: none; margin-top: 4px; }
+.notice__body { flex: 1; min-width: 0; }
+.notice__title { font-size: var(--fs-13); font-weight: 800; color: var(--ink); }
+.notice__text { font-size: 11.5px; color: var(--ink-2); line-height: 1.9; }
+.notice .btn { flex: none; margin-top: 2px; }
+.notice--warn { border-color: var(--warn); background: var(--warn-soft); }
+.notice--warn > svg { color: var(--warn-strong); }
+
+/* ── یادداشتِ رضایت در صفحهٔ خوش‌آمد ──────────────────────────────── */
+.consent-note {
+  padding: var(--s-3); border-radius: var(--r-1);
+  background: var(--accent-soft); border: 1px solid var(--accent-line);
+}
+.consent-note h4 { font-size: var(--fs-12); font-weight: 800; color: var(--accent-text); margin-bottom: 4px; }
+.consent-note p { font-size: 11.5px; color: var(--ink-2); line-height: 2; }
+.consent-note b { color: var(--ink); }
+
+/* ── صفحهٔ لودینگ مرحله‌ای استخراج ────────────────────────────────── */
+.extract { width: 100%; display: flex; flex-direction: column; gap: var(--s-3); text-align: start; }
+.extract__head { display: flex; align-items: center; gap: var(--s-2); }
+.extract__head .spinner { color: var(--accent); flex: none; }
+.steps { list-style: none; display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-1); }
+.steps__item {
+  display: flex; align-items: center; gap: var(--s-3);
+  font-size: var(--fs-12); color: var(--ink-3); line-height: 1.8;
+}
+.steps__mark {
+  flex: none; width: 26px; height: 26px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-3);
+  transition: all var(--t-fast) var(--ease);
+}
+.steps__mark svg { width: 14px; height: 14px; }
+.steps__item.is-active { color: var(--ink); font-weight: 700; }
+.steps__item.is-active .steps__mark { background: var(--accent-soft); border-color: var(--accent-line); color: var(--accent-text); }
+.steps__item.is-done { color: var(--ink-2); }
+.steps__item.is-done .steps__mark { background: var(--secondary-soft); border-color: transparent; color: var(--secondary-strong); }
+.steps__item.is-failed { color: var(--danger-strong); font-weight: 700; }
+.steps__item.is-failed .steps__mark { background: var(--danger-soft); border-color: var(--danger); color: var(--danger-strong); }
+
+/* ── فوترِ چسبان مودال (دکمهٔ ذخیره همیشه دیده می‌شود) ─────────────── */
+.modal-foot {
+  flex: none; position: sticky; bottom: 0;
+  padding: var(--s-3) var(--s-4);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 -6px 18px rgba(64, 48, 26, .06);
+}
+.row--tight { gap: var(--s-2); align-items: stretch; }
+.row--tight select { flex: 1; min-width: 0; }
+.row--tight .btn { flex: none; }
+.hint--warn { color: var(--warn-strong); }
+
+/* ============================================================================
+   اندازهٔ لمسی: همهٔ هدف‌های لمسی حداقل ۴۴×۴۴ پیکسل و فاصلهٔ حداقل ۸px
+   ============================================================================ */
+.btn, .icon-btn, .tab, .eye, .segmented__btn, .send-btn,
+.field input[type="text"], .field input[type="password"], .field select, .field textarea {
+  min-height: 44px; min-width: 44px;
+}
+.btn-sm, .btn-xs { min-height: 44px; }
+.btn-xs { padding: 0 var(--s-3); }
+.btn-block { min-width: 0; }
+
+.tabs { gap: var(--s-2); padding: 4px; }
+.tab { flex: 1 1 0; min-width: 0; padding: 0 4px; }
+.tab span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.segmented { gap: var(--s-2); padding: 4px; }
+.segmented__btn { flex: 1 1 0; min-width: 0; }
+.store-chips { gap: var(--s-2); }
+.chip { min-height: 44px; }
+.row { gap: var(--s-2); flex-wrap: wrap; }
+.stack { gap: var(--s-2); }
+.accordion__body { gap: var(--s-3); }
+.snapshot-bar { flex-wrap: wrap; gap: var(--s-2); row-gap: var(--s-2); }
+
+/* جلوگیری از سرریز افقی در عرض‌های کوچک */
+.app, .content, .screen, .modal, .modal-body, .field, .extract, .notice {
+  min-width: 0; max-width: 100%;
+}
+.field input, .field select, .field textarea { width: 100%; min-width: 0; }
+input, select, textarea { max-width: 100%; }
+.message, .product-card, .disclosure-card li { overflow-wrap: anywhere; }
+.brand-text, .product-body, .notice__body { min-width: 0; }
+.brand-text h1 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── ریسپانسیو: پاپ‌آپِ باریک (۳۶۰px و کمتر) ─────────────────────── */
+html, body {
+  width: 100%; max-width: 100vw; height: 100%;
+  overflow-x: hidden;
+}
+@media (max-width: 360px) {
+  :root { --s-4: 12px; --s-5: 16px; }
+  .modal { max-height: 96%; border-radius: var(--r-2) var(--r-2) 0 0; }
+  .modal-body { padding: var(--s-3); gap: var(--s-3); }
+  .modal-head { padding: var(--s-2) var(--s-3); }
+  .modal-foot { padding: var(--s-2) var(--s-3); }
+  .quick-search { padding: var(--s-2); flex-wrap: wrap; }
+  .quick-search .btn { width: 100%; }
+  .tabs { flex-wrap: wrap; }
+  .tab { flex: 1 1 40%; }
+  .segmented { flex-wrap: wrap; }
+  .segmented__btn { flex: 1 1 30%; }
+  .snapshot-bar { padding: var(--s-2); }
+  .privacy-summary { grid-template-columns: minmax(0, 1fr); }
+  .hero h2 { font-size: var(--fs-16); }
+  .input-area { padding: var(--s-2); }
+}

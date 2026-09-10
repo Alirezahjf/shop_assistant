@@ -305,7 +305,15 @@ if (mq && mq.addEventListener) {
 }
 
 // ───────────────────────────── تنظیمات پنل ─────────────────────────────
-const KNOWN_MODELS = ['qwen3.8-flash', 'glm-5.3-flash', 'gemini-flash-latest', 'gpt-6-astra', 'claude-fable-5-1'];
+// فهرست پیشنهادی — هم‌تراز با مستندات AvalAI (docs.avalai.ir/en/models).
+// نکته‌ها: «gemini-flash-latest» فقط یک alias است که به gemini-3.8-flash اشاره
+// می‌کند؛ claude-fable-5-1 طبق مستندات نیازمند «Tier 2 یا بالاتر» است و برای
+// حساب‌های عادی ۴۰۱/۴۰۳ می‌دهد (فقط با یادداشتِ روشن نگه داشته شده است).
+const KNOWN_MODELS = [
+  'qwen3.8-flash', 'glm-5.3-flash', 'gemini-3.8-flash', 'gemini-flash-latest',
+  'nemotron-3.5-lightning', 'qwen3.8-27b', 'deepseek-v4-flash', 'gpt-6-astra',
+  'claude-fable-5-1',
+];
 
 function setStatePill(el, isSet, setLabel = 'تنظیم‌شده', unsetLabel = 'تنظیم نشده') {
   if (!el) return;
@@ -409,6 +417,91 @@ function wireSettings() {
     try {
       await api('/api/telegram/test', { method: 'POST' });
       toast('پیام تست در تلگرام ارسال شد', 'ok');
+    } catch (err) { toast(err.message, 'err'); }
+    finally { btnLoading(btn, false); }
+  });
+
+  // نمایش/پنهان کردن مقدارِ فیلدهای راز
+  document.querySelectorAll('[data-eye]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const input = $(btn.dataset.eye);
+      if (!input) return;
+      const show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.innerHTML = icon(show ? 'eye-off' : 'eye');
+      btn.setAttribute('aria-label', show ? 'پنهان کردن مقدار' : 'نمایش مقدار');
+    });
+  });
+
+  // دریافت فهرست مدل‌ها از AvalAI (از طریق /api/models)
+  $('btn-fetch-models')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btnLoading(btn, true, 'در حال دریافت…');
+    try {
+      const r = await api('/api/models');
+      const models = (r.models || []).map((m) => (typeof m === 'string' ? m : m.id)).filter(Boolean);
+      const sel = $('set-model');
+      if (sel && models.length) {
+        const current = currentModelValue();
+        // گزینهٔ «سفارشی» را حفظ می‌کنیم و بقیه را از پاسخ سرور می‌سازیم
+        const customOpt = sel.querySelector('option[value="custom"]');
+        sel.innerHTML = '';
+        for (const id of models.slice(0, 400)) {
+          const opt = document.createElement('option');
+          opt.value = id;
+          opt.textContent = id;
+          sel.appendChild(opt);
+        }
+        if (customOpt) sel.appendChild(customOpt);
+        sel.value = models.includes(current) ? current : 'custom';
+        const custom = $('set-model-custom');
+        if (custom) { custom.hidden = sel.value !== 'custom'; if (custom.hidden === false) custom.value = current; }
+        const hint = $('model-source-hint');
+        if (hint) {
+          hint.textContent = r.source === 'static'
+            ? 'دسترسی به AvalAI برقرار نبود؛ فهرست ایستای مستندات نمایش داده می‌شود.'
+            : `فهرست زنده از AvalAI دریافت شد (${models.length} مدل).`;
+        }
+        toast(`فهرست مدل‌ها به‌روز شد — ${models.length} مدل`, 'ok');
+      } else {
+        toast('مدلی از سرور دریافت نشد.', 'err');
+      }
+    } catch (err) { toast(err.message, 'err'); }
+    finally { btnLoading(btn, false); }
+  });
+
+  // ذخیرهٔ یکجای همهٔ تنظیمات (فوتر چسبان مودال)
+  $('btn-save-all-settings')?.addEventListener('click', async (e) => {
+    const btn = e.currentTarget;
+    btnLoading(btn, true, 'در حال ذخیره…');
+    const done = [];
+    try {
+      const aiKey = $('set-ai-key')?.value.trim();
+      const model = currentModelValue();
+      if (aiKey || model) {
+        await api('/api/settings/avalai', { method: 'POST', body: JSON.stringify({ aiKey, model }) });
+        if ($('set-ai-key')) $('set-ai-key').value = '';
+        done.push('هوش مصنوعی');
+      }
+      const tgToken = $('set-tg-token')?.value.trim();
+      const tgChatId = $('set-tg-chat')?.value.trim();
+      if (tgToken || tgChatId) {
+        await api('/api/settings/telegram', { method: 'POST', body: JSON.stringify({ tgToken, tgChatId }) });
+        if ($('set-tg-token')) $('set-tg-token').value = '';
+        done.push('تلگرام');
+      }
+      const cur = $('set-pass-current')?.value || '';
+      const nxt = $('set-pass-new')?.value || '';
+      if (cur || nxt) {
+        if (nxt.length < 8) throw new Error('رمز جدید باید حداقل ۸ کاراکتر باشد.');
+        await api('/api/settings/password', { method: 'POST', body: JSON.stringify({ current: cur, new: nxt }) });
+        if ($('set-pass-current')) $('set-pass-current').value = '';
+        if ($('set-pass-new')) $('set-pass-new').value = '';
+        done.push('رمز مدیر');
+      }
+      await loadSettings();
+      document.dispatchEvent(new CustomEvent('app:telegram-status'));
+      toast(done.length ? `ذخیره شد: ${done.join('، ')}` : 'تغییری برای ذخیره وجود نداشت', done.length ? 'ok' : 'info');
     } catch (err) { toast(err.message, 'err'); }
     finally { btnLoading(btn, false); }
   });

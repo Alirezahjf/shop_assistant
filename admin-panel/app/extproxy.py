@@ -185,8 +185,14 @@ def run_chat(payload: dict) -> Dict[str, Any]:
     messages += data["history"]
     messages.append({"role": "user", "content": data["message"]})
 
+    # نکتهٔ مستندات: پارامتر max_tokens در chat_completion این ماژول روی سیم به
+    # max_completion_tokens ترجمه می‌شود (Legacy نبودن) و در صورت ۴۰۰ِ
+    # «پارامتر ناشناخته» یک‌بار با max_tokens تلاش مجدد می‌شود.
+    # temperature فقط وقتی فرستاده می‌شود که مدل آن را بپذیرد
+    # (kimi و glm-5.3 آن را رد می‌کنند).
     result = avalai.chat_completion(
         api_key, model, messages,
-        temperature=0.7, max_tokens=EXT_MAX_TOKENS,
+        temperature=0.7 if avalai.sampling_allowed(model) else None,
+        max_tokens=EXT_MAX_TOKENS,
     )
     return {"reply": result["text"], "model": result.get("model") or model}
