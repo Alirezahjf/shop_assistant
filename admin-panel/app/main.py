@@ -18,7 +18,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import analysis, avalai, db, security
+from . import analysis, avalai, db, extproxy, security
 from .config import AVALAI_API_KEY, AVALAI_MODEL, APP_NAME, COOKIE_SECURE
 from .security import SESSION_COOKIE
 from .interests import compute_interests, search_matches_category
@@ -511,3 +511,35 @@ async def api_settings_password(payload: dict, _: None = Depends(require_admin))
 @app.get("/healthz")
 async def healthz():
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# پروکسی افزونه (عمومی؛ کاربر بدون کلید — کلید فقط سمت سرور)
+# ---------------------------------------------------------------------------
+@app.post("/api/ext/chat")
+async def ext_chat(request: Request):
+    try:
+        payload = await request.json()
+    except Exception:  # noqa: BLE001
+        return JSONResponse({"ok": False, "error": "بدنهٔ JSON نامعتبر است."}, status_code=400)
+
+    client_ip = request.client.host if request.client else "unknown"
+    limited = extproxy.check_rate_limit(client_ip)
+    if limited:
+        retry_after, message = limited
+        return JSONResponse({"ok": False, "error": message}, status_code=429,
+                            headers={"Retry-After": str(retry_after)})
+    try:
+        result = extproxy.run_chat(payload)
+    except extproxy.ProxyError as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=e.status)
+    except avalai.AvalAiError as e:
+        status = 503 if e.retryable else 502
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=status)
+    return {"ok": True, "reply": result["reply"]}
+
+
+@app.get("/api/ext/ping")
+async def ext_ping():
+    """بررسی سلامت سرویس برای افزونه (بدون مصرف توکن)."""
+    return {"ok": True, "service": "kharidar-pro", "proxyEnabled": extproxy.EXT_PROXY_ENABLED}

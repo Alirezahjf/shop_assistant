@@ -1,136 +1,125 @@
 // ============================================================================
-// ai.js — کلاینت AvalAI (سازگار با OpenAI) برای افزونه
+// ai.js — کلاینت گفتگوی افزونه از طریق «پروکسی سرور مدیر»
 // ----------------------------------------------------------------------------
-// طبق مستندات https://docs.avalai.org/fa :
-//   • Base URL: https://api.avalai.ir/v1
-//   • احراز هویت: هدر Authorization: Bearer <KEY>
-//   • نقطه پایان استفاده‌شده: POST /v1/chat/completions (سازگاری کامل OpenAI)
-//   • خطاها به پیام‌های فارسی قابل‌فهم نگاشت می‌شوند + timeout + retry
+// معماری امن:
+//   افزونه (بدون هیچ کلید) ──► سرور مدیر /api/ext/chat ──► AvalAI (کلید سرور)
+//
+//  • هیچ کلید API در افزونه نگه‌داری یا ارسال نمی‌شود — هیچ‌جا.
+//  • پرامپت سیستم سمت سرور ساخته می‌شود؛ افزونه فقط پیام کاربر + تاریخچهٔ
+//    کوتاه + کانتکست پاکسازی‌شده (دامنه‌ها/جستجوها) را می‌فرستد.
+//  • timeout + retry + پیام خطای فارسی.
 // ============================================================================
 
-import { AVALAI_BASE_URL } from './constants.js';
+import { SERVICE_BASE_URL } from './constants.js';
 import { secureLog } from './log.js';
 
-const DEFAULT_TIMEOUT_MS = 45000;
-const MAX_RETRIES = 2;
+const DEFAULT_TIMEOUT_MS = 60000;
+const MAX_RETRIES = 1;
 
-class AvalAiError extends Error {
-  constructor(message, { status, retryable } = {}) {
+class ExtServiceError extends Error {
+  constructor(message, { retryable } = {}) {
     super(message);
-    this.status = status;
     this.retryable = retryable === true;
   }
 }
 
 function friendlyError(status, bodyText) {
   switch (status) {
-    case 401:
-    case 403:
-      return new AvalAiError('کلید API نامعتبر است یا دسترسی ندارد. کلید AvalAI را بررسی کنید.', { status });
-    case 402:
-      return new AvalAiError('اعتبار حساب AvalAI کافی نیست.', { status });
-    case 404:
-      return new AvalAiError('مدل انتخابی در AvalAI یافت نشد. نام مدل را بررسی کنید.', { status });
     case 429:
-      return new AvalAiError('محدودیت نرخ درخواست (Rate limit). کمی بعد دوباره تلاش کنید.', { status, retryable: true });
+      return new ExtServiceError('تعداد درخواست‌ها زیاد است؛ کمی بعد دوباره تلاش کنید.', { retryable: true });
+    case 503:
+      return new ExtServiceError('سرویس موقتاً در دسترس نیست. چند لحظه دیگر تلاش کنید.', { retryable: true });
     default:
-      if (status >= 500) return new AvalAiError(`خطای سرور AvalAI (${status}). دوباره تلاش می‌کنیم…`, { status, retryable: true });
-      return new AvalAiError(`خطای AvalAI (${status}): ${(bodyText || '').slice(0, 160)}`, { status });
+      if (status >= 500) return new ExtServiceError('خطای سرور؛ دوباره تلاش می‌کنیم…', { retryable: true });
+      // پیام فارسی سرور را نمایش بده
+      try {
+        const data = JSON.parse(bodyText || '{}');
+        if (data?.error) return new ExtServiceError(data.error);
+      } catch { /* noop */ }
+      return new ExtServiceError(`خطای سرویس (${status})`);
   }
 }
 
-/**
- * فراخوانی Chat Completions
- * @param {{apiKey:string, model:string, messages:Array, temperature?:number,
- *          maxTokens?:number, timeoutMs?:number, signal?:AbortSignal}} p
- * @returns {{text:string, usage?:object, model?:string}}
- */
-export async function chatCompletion(p) {
-  const {
-    apiKey, model, messages,
-    temperature = 0.6, maxTokens = 1600,
-    timeoutMs = DEFAULT_TIMEOUT_MS, signal,
-  } = p;
+/** کانتکست پاکسازی‌شده برای سرور (فقط آمار سطح بالا — بدون داده خام) */
+export function buildProxyContext(snapshot) {
+  if (!snapshot) return { domains: [], searches: [], categories: [] };
+  return {
+    domains: (snapshot.domains || []).slice(0, 8).map((d) => d.domain),
+    searches: (snapshot.searches || []).slice(0, 8).map((s) => s.term),
+    categories: [],
+  };
+}
 
-  if (!apiKey) throw new AvalAiError('کلید API تنظیم نشده است. از تنظیمات، کلید AvalAI را وارد کنید.');
-  if (!model) throw new AvalAiError('مدل انتخاب نشده است.');
+/**
+ * گفتگو با دستیار از طریق سرور.
+ * @param {{history:Array, message:string, snapshot?:object}} p
+ * @returns {{text:string}}
+ */
+export async function assistantChat(p) {
+  const { history = [], message, snapshot } = p;
+
+  const body = JSON.stringify({
+    message: String(message || '').slice(0, 1000),
+    history: history
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .slice(-16)
+      .map((m) => ({ role: m.role, content: String(m.content || '').slice(0, 1000) })),
+    context: buildProxyContext(snapshot),
+  });
 
   let lastError;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort('timeout'), timeoutMs);
-    if (signal) signal.addEventListener('abort', () => ac.abort(signal.reason), { once: true });
+    const timer = setTimeout(() => ac.abort('timeout'), DEFAULT_TIMEOUT_MS);
     try {
-      const res = await fetch(`${AVALAI_BASE_URL}/chat/completions`, {
+      const res = await fetch(`${SERVICE_BASE_URL}/api/ext/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature,
-          max_tokens: maxTokens,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body,
         signal: ac.signal,
       });
-
       if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        const err = friendlyError(res.status, body);
+        const text = await res.text().catch(() => '');
+        const err = friendlyError(res.status, text);
         if (!err.retryable || attempt === MAX_RETRIES) throw err;
         lastError = err;
       } else {
         const data = await res.json();
-        const choice = Array.isArray(data?.choices) ? data.choices[0] : undefined;
-        const text = choice?.message?.content;
-        if (typeof text !== 'string' || !text.trim()) {
-          throw new AvalAiError('پاسخ مدل خالی بود یا فیلتر شد. دوباره تلاش کنید.');
+        const reply = data?.reply;
+        if (typeof reply !== 'string' || !reply.trim()) {
+          throw new ExtServiceError('پاسخ دستیار خالی بود. دوباره تلاش کنید.');
         }
-        return { text, usage: data?.usage, model: data?.model };
+        return { text: reply };
       }
     } catch (e) {
       if (e?.name === 'AbortError' || String(e?.message).includes('timeout')) {
-        lastError = new AvalAiError('مهلت پاسخ AvalAI تمام شد (timeout).', { retryable: true });
+        lastError = new ExtServiceError('مهلت پاسخ سرور تمام شد. اینترنت را بررسی کنید.', { retryable: true });
         if (attempt === MAX_RETRIES) throw lastError;
-      } else if (e instanceof AvalAiError) {
+      } else if (e instanceof ExtServiceError) {
         if (!e.retryable || attempt === MAX_RETRIES) throw e;
         lastError = e;
       } else {
-        secureLog.error('خطای شبکه در فراخوانی AvalAI:', e?.message || String(e));
-        throw new AvalAiError('اتصال به AvalAI برقرار نشد. اینترنت/فیلترشکن را بررسی کنید.');
+        secureLog.error('خطای شبکه سرویس دستیار:', e?.name || 'network-error');
+        throw new ExtServiceError('اتصال به سرور دستیار برقرار نشد. اینترنت را بررسی کنید.');
       }
     } finally {
       clearTimeout(timer);
     }
-    // backoff نمایی
-    await new Promise((r) => setTimeout(r, 700 * Math.pow(2, attempt)));
+    await new Promise((r) => setTimeout(r, 800 * Math.pow(2, attempt)));
   }
-  throw lastError || new AvalAiError('خطای ناشناخته AvalAI.');
+  throw lastError || new ExtServiceError('خطای ناشناخته سرویس.');
 }
 
-/** آزمون اتصال با حداقل توکن */
-export async function testConnection(apiKey, model) {
-  const r = await chatCompletion({
-    apiKey,
-    model,
-    messages: [{ role: 'user', content: 'سلام. فقط کلمه «متصل» را بفرست.' }],
-    maxTokens: 20,
-    temperature: 0,
-    timeoutMs: 20000,
-  });
-  return { ok: true, sample: r.text.slice(0, 40), usage: r.usage };
-}
-
-/** دریافت فهرست مدل‌های موجود حساب (/v1/models) */
-export async function listModels(apiKey) {
-  const res = await fetch(`${AVALAI_BASE_URL}/models`, {
-    headers: { Authorization: `Bearer ${apiKey}` },
-    signal: AbortSignal.timeout ? AbortSignal.timeout(15000) : undefined,
-  });
-  if (!res.ok) throw friendlyError(res.status, '');
-  const data = await res.json();
-  const ids = (data?.data || []).map((m) => m?.id).filter(Boolean);
-  return ids;
+/** بررسی سلامت سرویس (بدون مصرف توکن) */
+export async function pingService() {
+  try {
+    const res = await fetch(`${SERVICE_BASE_URL}/api/ext/ping`, {
+      signal: AbortSignal.timeout ? AbortSignal.timeout(8000) : undefined,
+    });
+    if (!res.ok) return { ok: false };
+    const data = await res.json();
+    return { ok: Boolean(data?.ok), proxy: Boolean(data?.proxyEnabled) };
+  } catch {
+    return { ok: false };
+  }
 }

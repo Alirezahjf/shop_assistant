@@ -1,9 +1,9 @@
 // ============================================================================
 // background.js — Service Worker (MV3, ES Module)
 // ----------------------------------------------------------------------------
-// مسئولیت‌ها: مسیریابی پیام‌ها، جمع‌آوری+پاکسازی، مدیریت رازهای رمزنگاری‌شده،
-// گفتگو با AvalAI، ساخت خروجی/ارسال تلگرام. هیچ state حیاتی در حافظه نگه
-// نداریم — همه‌چیز در chrome.storage (رفع باگ مرگ Service Worker).
+// v2.1: گفتگو از طریق پروکسی سرور مدیر — کاربر هیچ کلیدی وارد/نگه نمی‌دارد.
+// تنها راز سمت کاربر: اطلاعات اختیاری ربات تلگرام (رمزنگاری AES-256-GCM).
+// state حیاتی در chrome.storage (مقاوم به مرگ Service Worker).
 // ============================================================================
 
 import { STORAGE_KEYS, DEFAULT_SETTINGS } from './lib/constants.js';
@@ -13,12 +13,11 @@ import {
   sealWithUnlockedKey, unsealWithUnlockedKey, invalidateUnlockedKey, maskSecret,
 } from './lib/crypto.js';
 import { collectAndSanitize, getStoredSnapshot, clearAllData } from './lib/collect.js';
-import { chatCompletion, testConnection, listModels } from './lib/ai.js';
+import { assistantChat } from './lib/ai.js';
 import { saveTelegramConfig, sendSnapshotToTelegram, testTelegram, hasTelegramConfig } from './lib/telegram.js';
-import { categoryStats, CATEGORY_LABELS } from './lib/taxonomy-lite.js';
 
 // ---------------------------------------------------------------------------
-// State مکالمه — در storage.session (باقی‌مانده تا بستن مرورگر، مقاوم به مرگ SW)
+// مکالمه — در storage.session (باقی‌مانده تا بستن مرورگر)
 // ---------------------------------------------------------------------------
 const CHAT_LIMIT = 24;
 
@@ -47,53 +46,10 @@ async function setSettings(patch) {
 }
 
 // ---------------------------------------------------------------------------
-// پرامپت سیستم دستیار خرید (فارسی) + پروتکل محصول
+// گفتگو با دستیار (سرور پرامپت سیستم را می‌سازد)
 // ---------------------------------------------------------------------------
-function buildSystemPrompt(snapshot, settings) {
-  let contextLine = 'داده‌ای از کاربر موجود نیست — صمیمی سلام کن و بپرس دنبال چه چیزی هستی.';
-  if (snapshot) {
-    const cats = categoryStats(snapshot.domains).slice(0, 6)
-      .map((c) => `${CATEGORY_LABELS[c.category] || c.category} (${c.visits} بازدید)`).join('، ');
-    const topDomains = snapshot.domains.slice(0, 8).map((d) => d.domain).join('، ');
-    const topSearches = snapshot.searches.slice(0, 8).map((s) => s.term).join('، ');
-    contextLine = `دامنه‌های پربازدید: ${topDomains || '—'}\nعلاقه‌مندی‌های دسته‌ای: ${cats || '—'}\nجستجوهای اخیر: ${topSearches || '—'}`;
-  }
-  return [
-    'شما «خریدار پرو» هستی؛ دستیار خرید صمیمی، حرفه‌ای و دقیقاً فارسی‌زبان.',
-    'اهداف: درک نیاز کاربر، پیشنهاد هوشمندانه محصول، و راهنمایی برای بهترین خرید.',
-    '',
-    'قواعد پاسخ:',
-    '1) مکالمه گرم و کوتاه نگه دار؛ از واژه‌های تخصصی خرید استفاده کن.',
-    '2) هر وقت محصول پیشنهاد می‌کنی، هر محصول را دقیقاً در این قالب بده:',
-    '   [PRODUCT]{"name":"نام محصول","summary":"توضیح یک‌دو جمله‌ای","link":"https://لینک معتبر محصول","image":"https://لینک تصویر اختیاری","price":"قیمت تقریبی اختیاری"}[/PRODUCT]',
-    '   لینک فقط به فروشگاه‌های معتبر (دیجی‌کالا، ترب، تکنولایف، باسلام، آمازون، علی‌اکسپرس، ای‌بی) باشد و حتماً https.',
-    '3) هر وقت کاربر دنبال خرید چیزی است و لازم شد جستجوی گسترده کند، یک خط اضافه کن:',
-    '   [SHOPS]{"query":"عبارت جستجوی مناسب"}[/SHOPS]',
-    '4) از درخواست یا تکرار هیچ داده حساس (رمز، کارت بانکی، نشست) خودداری کن.',
-    '5) اگر سؤال کاملاً بی‌ربط به خرید بود، مؤدبانه پاسخ کوتاه بده و به موضوع خرید برگرد.',
-    '',
-    `تحلیل پاکسازی‌شده رفتار کاربر (دستگاه: ${settings.deviceLabel}):`,
-    contextLine,
-    'نکته: این داده‌ها فقط «دامنه و شمارش» هستند؛ هیچ مقدار کوکی یا URL شخصی در دسترس تو نیست.',
-  ].join('\n');
-}
-
-async function buildInitialMessages() {
-  const settings = await getSettings();
-  const snapshot = await getStoredSnapshot();
-  const system = buildSystemPrompt(snapshot, settings);
-  return [
-    { role: 'system', content: system },
-    { role: 'user', content: 'سلام! تحلیل من رو شروع کن و بدون پیشنهاد محصول، گرم با من صحبت کن و بپرس دنبال چه چیزی هستم.' },
-  ];
-}
-
-async function requireAiKey() {
-  const { [STORAGE_KEYS.sealedAiKey]: sealed } = await chrome.storage.local.get(STORAGE_KEYS.sealedAiKey);
-  if (!sealed) throw new Error('کلید AvalAI تنظیم نشده است. از ⚙️ تنظیمات واردش کنید.');
-  const key = await unsealWithUnlockedKey(sealed);
-  if (!key) throw new Error('قفل رمزنگاری بسته است. رمز رمزنگاری را وارد کنید.');
-  return key;
+async function requireSnapshot() {
+  return getStoredSnapshot();
 }
 
 // ---------------------------------------------------------------------------
@@ -102,18 +58,18 @@ async function requireAiKey() {
 const handlers = {
   async get_state() {
     const settings = await getSettings();
-    const { [STORAGE_KEYS.sealedAiKey]: hasKey } = await chrome.storage.local.get(STORAGE_KEYS.sealedAiKey);
     const { [STORAGE_KEYS.consent]: consent } = await chrome.storage.local.get(STORAGE_KEYS.consent);
     const snapshot = await getStoredSnapshot();
     const conversation = await loadConversation();
     const unlocked = Boolean(await getUnlockedKey());
+    const { sealedTgToken, sealedTgChatId } = await chrome.storage.local.get(['sealedTgToken', 'sealedTgChatId']);
     return {
       ok: true,
       consent: Boolean(consent),
-      hasAiKey: Boolean(hasKey),
+      setupDone: Boolean(settings.setupDone), // پس از تکمیل پیکربندی سریع
       unlocked,
+      hasSealedSecrets: Boolean(sealedTgToken || sealedTgChatId),
       settings: {
-        model: settings.model,
         deviceLabel: settings.deviceLabel,
         historyDays: settings.historyDays,
         tgEnabled: settings.tgEnabled,
@@ -148,30 +104,25 @@ const handlers = {
     return { ok: true };
   },
 
-  async save_settings({ aiKey, model, deviceLabel, historyDays, tgEnabled, tgToken, tgChatId, passphrase }) {
-    // رمز اصلی: اگر کاربر رمزی داده یا اولین بار است، راه‌اندازی/بازخوانی شود
-    const { masterSalt } = await chrome.storage.local.get('masterSalt');
-    if (passphrase) {
-      if (masterSalt) await unlockWithPassphrase(passphrase);
-      else await setupMasterPassphrase(passphrase);
-    } else if (!(await getUnlockedKey())) {
-      throw new Error('برای ذخیره اطلاعات حساس، رمز رمزنگاری لازم است.');
+  async save_settings({ deviceLabel, historyDays, tgEnabled, tgToken, tgChatId, passphrase }) {
+    // راز تلگرام فقط با قفل باز ذخیره می‌شود
+    if (tgToken && String(tgToken).trim() && tgChatId && String(tgChatId).trim()) {
+      const { masterSalt } = await chrome.storage.local.get('masterSalt');
+      if (passphrase) {
+        if (masterSalt) await unlockWithPassphrase(passphrase);
+        else await setupMasterPassphrase(passphrase);
+      } else if (!(await getUnlockedKey())) {
+        throw new Error('برای ذخیرهٔ اطلاعات ربات، ابتدا رمز رمزنگاری را تنظیم/وارد کنید.');
+      }
+      await saveTelegramConfig(String(tgToken).trim(), String(tgChatId).trim());
     }
 
     const patch = {};
-    if (model) patch.model = String(model).slice(0, 80);
     if (typeof deviceLabel === 'string' && deviceLabel.trim()) patch.deviceLabel = deviceLabel.trim().slice(0, 60);
     if (historyDays) patch.historyDays = Math.min(Math.max(parseInt(historyDays, 10) || 30, 1), 90);
     if (typeof tgEnabled === 'boolean') patch.tgEnabled = tgEnabled;
-
-    if (aiKey && String(aiKey).trim()) {
-      const sealed = await sealWithUnlockedKey(String(aiKey).trim());
-      await chrome.storage.local.set({ [STORAGE_KEYS.sealedAiKey]: sealed });
-    }
-    if (tgToken && String(tgToken).trim() && tgChatId && String(tgChatId).trim()) {
-      await saveTelegramConfig(String(tgToken).trim(), String(tgChatId).trim());
-      patch.tgEnabled = true;
-    }
+    if (tgToken && tgChatId) patch.tgEnabled = true;
+    patch.setupDone = true;
 
     const settings = await setSettings(patch);
     return { ok: true, settings };
@@ -179,14 +130,7 @@ const handlers = {
 
   async get_settings_masked() {
     const settings = await getSettings();
-    const { [STORAGE_KEYS.sealedAiKey]: sealedKey } = await chrome.storage.local.get(STORAGE_KEYS.sealedAiKey);
-    let keyMask = null;
-    if (sealedKey) {
-      try {
-        keyMask = maskSecret(await unsealWithUnlockedKey(sealedKey) || '');
-      } catch { keyMask = '••••'; }
-    }
-    return { ok: true, settings, keyMask };
+    return { ok: true, settings, keyMask: null };
   },
 
   async collect() {
@@ -195,12 +139,17 @@ const handlers = {
   },
 
   async chat_start() {
-    const messages = await buildInitialMessages();
-    const apiKey = await requireAiKey();
-    const settings = await getSettings();
-    const { text, usage } = await chatCompletion({ apiKey, model: settings.model, messages, temperature: 0.7 });
-    const conversation = await saveConversation([...messages, { role: 'assistant', content: text }]);
-    secureLog.info('چت جدید شروع شد. توکن مصرفی:', usage?.total_tokens ?? '?');
+    // پیام اول: بدون پیام کاربر — سرور با کانتکست، سلام گرم می‌سازد
+    const snapshot = await requireSnapshot();
+    const { text } = await assistantChat({
+      message: 'سلام! تحلیل من رو شروع کن و بدون پیشنهاد محصول، گرم با من صحبت کن و بپرس دنبال چه چیزی هستم.',
+      history: [],
+      snapshot,
+    });
+    const conversation = await saveConversation([
+      { role: 'user', content: '(شروع گفتگو)' },
+      { role: 'assistant', content: text },
+    ]);
     return { ok: true, conversation };
   },
 
@@ -208,14 +157,14 @@ const handlers = {
     const text = String(message || '').trim();
     if (!text) throw new Error('پیام خالی است.');
     let conversation = await loadConversation();
-    if (conversation.length === 0) conversation = await buildInitialMessages();
-    conversation = await saveConversation([...conversation, { role: 'user', content: text }]);
-
-    const apiKey = await requireAiKey();
-    const settings = await getSettings();
-    const { text: reply, usage } = await chatCompletion({ apiKey, model: settings.model, messages: conversation });
-    const updated = await saveConversation([...conversation, { role: 'assistant', content: reply }]);
-    return { ok: true, conversation: updated, usage };
+    const snapshot = await requireSnapshot();
+    const { text: reply } = await assistantChat({
+      message: text,
+      history: conversation.filter((m) => m.role === 'user' || m.role === 'assistant').slice(-14),
+      snapshot,
+    });
+    const updated = await saveConversation([...conversation, { role: 'user', content: text }, { role: 'assistant', content: reply }]);
+    return { ok: true, conversation: updated };
   },
 
   async chat_reset() {
@@ -254,19 +203,6 @@ const handlers = {
     return { ok: true };
   },
 
-  async test_ai({ aiKey }) {
-    const key = aiKey && String(aiKey).trim() ? String(aiKey).trim() : await requireAiKey();
-    const settings = await getSettings();
-    const r = await testConnection(key, settings.model);
-    return { ok: true, sample: r.sample };
-  },
-
-  async list_models({ aiKey }) {
-    const key = aiKey && String(aiKey).trim() ? String(aiKey).trim() : await requireAiKey();
-    const ids = await listModels(key);
-    return { ok: true, models: ids.slice(0, 200) };
-  },
-
   async test_telegram() {
     await testTelegram();
     return { ok: true };
@@ -297,7 +233,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 });
 
 chrome.runtime.onInstalled.addListener(async () => {
-  secureLog.info('دستیار خرید هوشمند نصب/به‌روزرسانی شد. نسخه ۲.۰');
+  secureLog.info('دستیار خرید هوشمند نصب/به‌روزرسانی شد. نسخه ۲.۱ (پروکسی سرور)');
   const settings = await getSettings();
-  await setSettings(settings); // تضمین مقادیر پیش‌فرض
+  await setSettings(settings);
 });

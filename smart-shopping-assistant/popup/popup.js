@@ -5,7 +5,6 @@
 // نمی‌بیند (فقط ماسک). رندر چت کاملاً DOM-based است (بدون innerHTML از داده).
 // ============================================================================
 
-import { AVALAI_MODELS } from '../lib/constants.js';
 import { buildStoreLinks, storeNameFromLink } from '../lib/stores.js';
 
 // ───────────────────────── ابزارهای پایه ─────────────────────────
@@ -233,8 +232,13 @@ async function route() {
   try {
     const state = await send('get_state');
     if (!state.consent) { showScreen('welcome'); return; }
-    if (!state.hasAiKey) { initSetupScreen(); showScreen('setup'); return; }
-    if (!state.unlocked) { showScreen('unlock'); $('unlock-pass').focus(); return; }
+    if (!state.setupDone) { initSetupScreen(); showScreen('setup'); return; }
+    if (state.hasSealedSecrets && !state.unlocked) {
+      // قفل بسته است اما می‌توان بدون آن چت کرد؛ فقط عملیات تلگرام رمز می‌خواهد
+      showScreen('unlock');
+      $('unlock-pass').focus();
+      return;
+    }
     await enterChat(state);
   } catch (e) {
     showError(e.message);
@@ -253,30 +257,7 @@ $('btn-accept-consent').addEventListener('click', async () => {
   } catch (e) { toast(e.message, 'err'); }
 });
 
-// ───────────────────────── پیکربندی اولیه ─────────────────────────
-function populateModelSelect(select, includeCustom = true) {
-  select.textContent = '';
-  for (const m of AVALAI_MODELS) {
-    const opt = document.createElement('option');
-    opt.value = m.id;
-    opt.textContent = m.label;
-    select.appendChild(opt);
-  }
-}
-
-function handleModelCustom(select, customInput) {
-  const sync = () => {
-    customInput.hidden = select.value !== 'custom';
-    if (!customInput.hidden) customInput.focus();
-  };
-  select.addEventListener('change', sync);
-  sync();
-}
-
-function initSetupScreen() {
-  populateModelSelect($('setup-model'));
-  handleModelCustom($('setup-model'), $('setup-model-custom'));
-}
+function initSetupScreen() { /* تنظیم سریع: فیلد ثابت است */ }
 
 document.querySelectorAll('[data-eye]').forEach((btn) => {
   btn.addEventListener('click', () => {
@@ -286,32 +267,27 @@ document.querySelectorAll('[data-eye]').forEach((btn) => {
 });
 
 $('btn-finish-setup').addEventListener('click', async () => {
-  const pass = $('setup-pass').value;
-  const pass2 = $('setup-pass2').value;
-  const key = $('setup-key').value.trim();
-  const modelSel = $('setup-model').value === 'custom'
-    ? $('setup-model-custom').value.trim()
-    : $('setup-model').value;
+  const pass = $('setup-pass') ? $('setup-pass').value : '';
   const tgToken = $('setup-tg-token').value.trim();
   const tgChat = $('setup-tg-chat').value.trim();
 
-  if (pass.length < 6) return toast('رمز رمزنگاری باید حداقل ۶ کاراکتر باشد.', 'err');
-  if (pass !== pass2) return toast('تکرار رمز مطابقت ندارد.', 'err');
-  if (!key) return toast('کلید AvalAI الزامی است.', 'err');
   if (tgToken && !tgChat) return toast('شناسه عددی ادمین را وارد کنید.', 'err');
+  if ((tgToken || pass) && pass && pass.length < 6) return toast('رمز رمزنگاری باید حداقل ۶ کاراکتر باشد.', 'err');
+  if (tgToken && !pass) return toast('برای رمز شدن اطلاعات ربات، رمز رمزنگاری لازم است.', 'err');
 
   const btn = $('btn-finish-setup');
   btn.disabled = true;
-  btn.textContent = 'در حال ذخیره امن…';
+  btn.textContent = 'در حال ذخیره…';
   try {
     await send('save_settings', {
-      passphrase: pass, aiKey: key, model: modelSel,
+      passphrase: pass || undefined,
       deviceLabel: $('setup-device').value.trim() || 'دستگاه من',
       tgEnabled: Boolean(tgToken && tgChat),
       tgToken: tgToken || undefined,
       tgChatId: tgChat || undefined,
     });
-    toast('پیکربندی با موفقیت ذخیره شد ✅', 'ok');
+    try { await send('accept_consent'); } catch { /* noop */ }
+    toast('آماده شد ✅', 'ok');
     if (tgToken && tgChat) {
       try { await send('test_telegram'); toast('پیام تست به تلگرام ارسال شد 📨', 'ok'); } catch (e) { toast(`تست تلگرام: ${e.message}`, 'err'); }
     }
@@ -319,7 +295,7 @@ $('btn-finish-setup').addEventListener('click', async () => {
   } catch (e) {
     toast(e.message, 'err');
     btn.disabled = false;
-    btn.textContent = 'ذخیره امن و شروع';
+    btn.textContent = 'شروع کنید';
   }
 });
 
@@ -335,6 +311,16 @@ $('btn-unlock').addEventListener('click', async () => {
     toast(e.message, 'err');
   }
 });
+
+// رد کردن: چت نیازی به قفل ندارد (قفل فقط برای رازهای تلگرام است)
+const skipBtn = document.createElement('button');
+skipBtn.className = 'btn btn-ghost btn-block';
+skipBtn.textContent = 'فعلاً نه — فقط چت';
+skipBtn.addEventListener('click', async () => {
+  const state = await send('get_state');
+  await enterChat(state);
+});
+$('screen-unlock').appendChild(skipBtn);
 $('unlock-pass').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') $('btn-unlock').click();
 });
@@ -470,16 +456,9 @@ $('btn-quick-search').addEventListener('click', () => {
 const modal = $('modal-settings');
 
 function openSettings() {
-  populateModelSelect($('set-model'));
-  handleModelCustom($('set-model'), $('set-model-custom'));
   send('get_settings_masked').then((res) => {
-    $('set-model').value = AVALAI_MODELS.some((m) => m.id === res.settings.model)
-      ? res.settings.model : 'custom';
-    $('set-model').dispatchEvent(new Event('change'));
-    if ($('set-model').value === 'custom') $('set-model-custom').value = res.settings.model;
     $('set-device').value = res.settings.deviceLabel;
     $('set-days').value = String(res.settings.historyDays);
-    $('set-key-mask').textContent = res.keyMask ? `(ذخیره‌شده: ${res.keyMask})` : '(ذخیره نشده)';
     $('set-tg-enabled').checked = Boolean(res.settings.tgEnabled);
     $('set-tg-mask').textContent = res.settings.tgEnabled ? '(تنظیم و رمزنگاری شده ✅)' : '(تنظیم نشده)';
   }).catch((e) => toast(e.message, 'err'));
@@ -506,29 +485,14 @@ document.querySelectorAll('.tab').forEach((tab) => {
 });
 
 $('btn-save-ai').addEventListener('click', async () => {
-  const model = $('set-model').value === 'custom'
-    ? $('set-model-custom').value.trim() : $('set-model').value;
   try {
     await send('save_settings', {
-      aiKey: $('set-key').value.trim() || undefined,
-      model,
       deviceLabel: $('set-device').value.trim(),
       historyDays: $('set-days').value,
     });
     toast('تنظیمات ذخیره شد ✅', 'ok');
-    $('set-key').value = '';
     openSettings();
   } catch (e) { toast(e.message, 'err'); }
-});
-
-$('btn-test-ai').addEventListener('click', async () => {
-  const btn = $('btn-test-ai');
-  btn.disabled = true; btn.textContent = 'در حال تست…';
-  try {
-    const r = await send('test_ai', { aiKey: $('set-key').value.trim() || undefined });
-    toast(`اتصال موفق ✅ — پاسخ نمونه: ${r.sample}`, 'ok');
-  } catch (e) { toast(e.message, 'err'); }
-  finally { btn.disabled = false; btn.textContent = 'تست اتصال'; }
 });
 
 $('btn-save-tg').addEventListener('click', async () => {

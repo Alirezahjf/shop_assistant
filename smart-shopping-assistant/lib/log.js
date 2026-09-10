@@ -10,8 +10,8 @@ const REDACT_PATTERNS = [
   // توکن ربات تلگرام: <bot_id>:<secret>
   { re: /\b\d{8,10}:[A-Za-z0-9_-]{30,}\b/g, tag: '[TELEGRAM_TOKEN]' },
   { re: /bot\d{8,10}:[^/\s]+/gi, tag: 'bot[TELEGRAM_TOKEN]' },
-  // کلید API (عمومی: sk-، AIza، و هر رشته کلیدمانند ۳۲+)
-  { re: /\b(sk|rk)-[A-Za-z0-9_-]{16,}\b/g, tag: '[API_KEY]' },
+  // کلیدهای AvalAI (پیشوند aa- / sk- / rk-) و گوگل
+  { re: /\b(aa|sk|rk)-[A-Za-z0-9_-]{16,}\b/g, tag: '[API_KEY]' },
   { re: /\bAIza[A-Za-z0-9_-]{20,}\b/g, tag: '[API_KEY]' },
   { re: /\bBearer\s+[A-Za-z0-9._-]{16,}/gi, tag: 'Bearer [REDACTED]' },
   // شماره کارت / شبا / ایمیل

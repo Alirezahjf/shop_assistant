@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "خریدار پرو — دستیار خرید هوشمند",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "دستیار خرید مبتنی بر AvalAI با پاکسازی کامل داده حساس: بدون مقدار کوکی، بدون دامنه بانکی/پیام‌رسان/جنسی. تحلیل محلی + ارسال اختیاری.",
   "permissions": [
     "storage"
@@ -11,8 +11,8 @@
     "cookies"
   ],
   "host_permissions": [
-    "https://api.avalai.ir/*",
-    "https://api.telegram.org/*"
+    "https://api.telegram.org/*",
+    "http://localhost:8000/*"
   ],
   "background": {
     "service_worker": "background.js",

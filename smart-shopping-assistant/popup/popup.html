@@ -38,7 +38,7 @@
       <!-- ═══════════ صفحه ۱: خوش‌آمد + افشای کامل ═══════════ -->
       <section class="screen" id="screen-welcome" hidden>
         <div class="hero">
-          <div class="hero-badge">✦ نسخه ۲.۰ — حریم خصوصی شفاف</div>
+          <div class="hero-badge">✦ نسخه ۲.۱ — بدون نیاز به هیچ کلیدی</div>
           <h2>دستیار خرید هوشمند شما</h2>
           <p class="hero-sub">قبل از شروع، دقیقاً بدانید چه اتفاقی می‌افتد. شفافیت کامل، بدون ستاره پشت پرده.</p>
         </div>
@@ -70,39 +70,14 @@
         </button>
       </section>
 
-      <!-- ═══════════ صفحه ۲: پیکربندی امن ═══════════ -->
+      <!-- ═══════════ صفحه ۲: پیکربندی ═══════════ -->
       <section class="screen" id="screen-setup" hidden>
-        <h2 class="screen-title">🔐 پیکربندی امن</h2>
-        <p class="screen-desc">رازها فقط رمزنگاری‌شده ذخیره می‌شوند. یک «رمز رمزنگاری» انتخاب کنید:</p>
+        <h2 class="screen-title">⚙️ تنظیم سریع</h2>
+        <p class="screen-desc">هوش مصنوعی از سرور امن تأمین می‌شود — نیازی به هیچ کلیدی نیست.</p>
 
-        <div class="field">
-          <label for="setup-pass">رمز رمزنگاری (حداقل ۶ کاراکتر)</label>
-          <div class="input-wrap">
-            <input type="password" id="setup-pass" placeholder="مثلاً یک عبارت به‌یادماندنی" autocomplete="new-password">
-            <button type="button" class="eye" data-eye="setup-pass" aria-label="نمایش/مخفی">👁</button>
-          </div>
-        </div>
-        <div class="field">
-          <label for="setup-pass2">تکرار رمز رمزنگاری</label>
-          <input type="password" id="setup-pass2" autocomplete="new-password">
-        </div>
-
-        <div class="divider"><span>اتصال هوش مصنوعی AvalAI</span></div>
-        <div class="field">
-          <label for="setup-key">کلید API از <a href="https://chat.avalai.ir/platform/home" target="_blank" rel="noopener noreferrer">داشبورد AvalAI</a></label>
-          <div class="input-wrap">
-            <input type="password" id="setup-key" placeholder="sk-…" autocomplete="off">
-            <button type="button" class="eye" data-eye="setup-key" aria-label="نمایش/مخفی">👁</button>
-          </div>
-        </div>
-        <div class="field">
-          <label for="setup-model">مدل</label>
-          <select id="setup-model"></select>
-          <input type="text" id="setup-model-custom" placeholder="نام مدل سفارشی، مثل gpt-5-mini" hidden>
-        </div>
         <div class="field">
           <label for="setup-device">برچسب این دستگاه <small>(در خروجی‌ها دیده می‌شود)</small></label>
-          <input type="text" id="setup-device" value="لپ‌تاپ من" maxlength="60">
+          <input type="text" id="setup-device" value="دستگاه من" maxlength="60">
         </div>
 
         <details class="accordion">
@@ -115,10 +90,17 @@
             <label for="setup-tg-chat">شناسه عددی ادمین</label>
             <input type="text" id="setup-tg-chat" placeholder="مثلاً 8810826597" inputmode="numeric" autocomplete="off">
           </div>
+          <div class="field">
+            <label for="setup-pass">رمز رمزنگاری (فقط برای رمز شدن اطلاعات ربات — حداقل ۶ کاراکتر)</label>
+            <div class="input-wrap">
+              <input type="password" id="setup-pass" placeholder="اگر ربات می‌خواهید، لازم است" autocomplete="new-password">
+              <button type="button" class="eye" data-eye="setup-pass" aria-label="نمایش/مخفی">👁</button>
+            </div>
+          </div>
           <p class="hint">اطلاعات ربات با AES-256-GCM رمزنگاری و در هیچ لاگی نوشته نمی‌شود.</p>
         </details>
 
-        <button class="btn btn-primary btn-block" id="btn-finish-setup">ذخیره امن و شروع</button>
+        <button class="btn btn-primary btn-block" id="btn-finish-setup">شروع کنید</button>
       </section>
 
       <!-- ═══════════ صفحه ۳: بازکردن قفل ═══════════ -->
@@ -177,21 +159,12 @@
       </header>
       <div class="modal-body">
         <div class="tabs">
-          <button class="tab active" data-tab="tab-ai">هوش مصنوعی</button>
+          <button class="tab active" data-tab="tab-ai">عمومی</button>
           <button class="tab" data-tab="tab-telegram">تلگرام</button>
           <button class="tab" data-tab="tab-data">داده و حریم خصوصی</button>
         </div>
 
         <div class="tab-pane active" id="tab-ai">
-          <div class="field">
-            <label for="set-key">کلید AvalAI <small id="set-key-mask"></small></label>
-            <input type="password" id="set-key" placeholder="برای تغییر، کلید جدید را وارد کنید" autocomplete="off">
-          </div>
-          <div class="field">
-            <label for="set-model">مدل</label>
-            <select id="set-model"></select>
-            <input type="text" id="set-model-custom" placeholder="نام مدل سفارشی" hidden>
-          </div>
           <div class="field">
             <label for="set-device">برچسب دستگاه</label>
             <input type="text" id="set-device" maxlength="60">
@@ -207,9 +180,9 @@
             </select>
           </div>
           <div class="row">
-            <button class="btn btn-ghost" id="btn-test-ai">تست اتصال</button>
             <button class="btn btn-primary" id="btn-save-ai">ذخیره</button>
           </div>
+          <p class="hint">🤖 هوش مصنوعی از سرور امن تأمین می‌شود؛ برای کاربر هیچ کلیدی لازم نیست.</p>
         </div>
 
         <div class="tab-pane" id="tab-telegram">

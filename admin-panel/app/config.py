@@ -49,6 +49,15 @@ AVALAI_API_KEY = os.environ.get("AVALAI_API_KEY", "")
 AVALAI_MODEL = os.environ.get("AVALAI_MODEL", "qwen3.8-flash")
 AVALAI_BASE_URL = "https://api.avalai.ir/v1"
 
+# --- پروکسی افزونه (کاربران نهایی بدون کلید، از کلید سرور استفاده می‌کنند) ---
+EXT_PROXY_ENABLED = os.environ.get("EXT_PROXY_ENABLED", "true").lower() == "true"
+EXT_RATE_PER_MINUTE = int(os.environ.get("EXT_RATE_PER_MINUTE", "6"))     # per IP
+EXT_RATE_PER_HOUR = int(os.environ.get("EXT_RATE_PER_HOUR", "40"))        # per IP
+EXT_DAILY_LIMIT = int(os.environ.get("EXT_DAILY_LIMIT", "600"))           # global/day
+EXT_MAX_MESSAGE_CHARS = 1000
+EXT_MAX_HISTORY = 16
+EXT_MAX_TOKENS = 900
+
 # --- ربات تلگرام (اختیاری: از UI تنظیمات هم قابل وارد شدن است) ---
 TG_BOT_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
 TG_ADMIN_CHAT_ID = os.environ.get("TG_ADMIN_CHAT_ID", "")
