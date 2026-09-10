@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>خریدار پرو — دستیار خرید هوشمند</title>
-  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="/popup.css">
   <script>
   /* تم پیش از رندر اعمال می‌شود تا پرش رنگ نداشته باشیم (روشن / تیره / سیستم) */
   (function () {
@@ -395,6 +395,56 @@
   <!-- ═══════════ توست ═══════════ -->
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
-  <script type="module" src="popup.js"></script>
+  <script>
+  /* ═══════════════════════════════════════════════════════════════════════
+     پیش‌نمایش طراحی (خارج از بستهٔ افزونه — tools/preview). chrome.runtime
+     با دادهٔ نمونه شبیه‌سازی می‌شود؛ حالت اولیه از ?state= می‌آید.
+     ═══════════════════════════════════════════════════════════════════════ */
+  (function () {
+    var wanted = new URLSearchParams(location.search).get('state') || 'chat';
+    var store = {
+      consent: wanted !== 'welcome',
+      setupDone: wanted !== 'welcome' && wanted !== 'setup',
+      hasSnapshot: wanted === 'chat',
+      sealed: wanted === 'unlock',
+      conversation: [],
+    };
+    var PRODUCT = JSON.stringify({
+      name: 'کفش ورزشی مدل Aero Run', summary: 'سبک، مناسب پیاده‌روی روزانه و تمرین سبک',
+      price: '۱٫۲۵۰٫۰۰۰ تومان', link: 'https://www.digikala.com/product/1'
+    });
+    var SHOPS = JSON.stringify({ query: 'کفش ورزشی' });
+    var OK = function (extra) { return Object.assign({ ok: true }, extra || {}); };
+    window.chrome = { runtime: { sendMessage: async function (msg) {
+      switch (msg.action) {
+        case 'get_state': return OK({
+          consent: store.consent, setupDone: store.setupDone,
+          hasSealedSecrets: store.sealed, unlocked: !store.sealed,
+          hasSnapshot: store.hasSnapshot, chatLength: store.conversation.length,
+          snapshotStats: store.hasSnapshot ? { domains: 17, searches: 11, cookies: 3 } : null });
+        case 'accept_consent': store.consent = true; return OK();
+        case 'save_settings': store.setupDone = true; return OK();
+        case 'get_settings_masked': return OK({ settings: { deviceLabel: 'لپ‌تاپ من', historyDays: '30', tgEnabled: true } });
+        case 'collect': store.hasSnapshot = true; return OK();
+        case 'chat_start':
+          store.conversation = [{ role: 'assistant', content:
+            'سلام! بر اساس ۱۷ دامنه و ۱۱ جستجوی پاکسازی‌شده، سلیقهٔ شما به «ورزش و کالای دیجیتال سبک» می‌خورد.\n[SHOPS]' + SHOPS + '[/SHOPS]\n[PRODUCT]' + PRODUCT + '[/PRODUCT]' }];
+          return OK({ conversation: store.conversation });
+        case 'get_chat': return OK({ conversation: store.conversation });
+        case 'chat_send':
+          store.conversation.push({ role: 'user', content: msg.message });
+          store.conversation.push({ role: 'assistant', content: 'این گزینه هم با بودجهٔ شما جور است:\n[PRODUCT]' + PRODUCT + '[/PRODUCT]' });
+          return OK({ conversation: store.conversation });
+        case 'test_telegram': return OK();
+        case 'export_snapshot': return OK({ snapshot: { stats: { domains: 17, searches: 11, cookies: 3 } } });
+        case 'telegram_send_snapshot': return OK();
+        case 'chat_reset': store.conversation = []; return OK();
+        case 'clear_all': store.hasSnapshot = false; return OK();
+        default: return OK();
+      }
+    } } };
+  })();
+  </script>
+  <script type="module" src="/popup.js"></script>
 </body>
 </html>
