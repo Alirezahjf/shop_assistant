@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>راهنمای سبک — کاغذ کاهی و مُس</title>
+<link rel="stylesheet" href="/static/admin.css">
+<link rel="icon" href="/static/favicon.png">
+<script>
+/* تم پیش از رندر اعمال می‌شود تا پرش رنگ نداشته باشیم */
+(function () {
+  try {
+    var pref = localStorage.getItem('admin-theme') || 'system';
+    var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', pref === 'system' ? (dark ? 'dark' : 'light') : pref);
+  } catch (e) { document.documentElement.setAttribute('data-theme', 'light'); }
+})();
+</script>
+</head>
+<body>
+
+<header class="app-topbar">
+  <div class="app-topbar__inner">
+    <a class="brand" href="/">
+      <img class="brand__logo" src="/static/logo.svg" alt="">
+      <span>
+        <span class="brand__title">راهنمای سبک</span>
+        <span class="brand__sub">«کاغذ کاهی و مُس» — همهٔ اجزا در یک نگاه</span>
+      </span>
+    </a>
+    <span class="grow"></span>
+    <div class="segmented" role="group" aria-label="انتخاب تم">
+      <button class="segmented__btn" type="button" data-theme-set="light">روشن</button>
+      <button class="segmented__btn" type="button" data-theme-set="dark">تیره</button>
+      <button class="segmented__btn" type="button" data-theme-set="system">سیستم</button>
+    </div>
+  </div>
+</header>
+
+<main class="main">
+
+  <section class="card view-enter">
+    <h1 class="section-title">پالت رنگ و کنتراست</h1>
+    <p class="hint">همهٔ جفت‌رنگ‌های متنی زیر نسبت کنتراست ≥۴.۵:۱ (AA) دارند؛ اعداد با فرمول WCAG 2.1 محاسبه شده‌اند. امروز: <span data-today></span></p>
+    <div class="stat-row" style="grid-template-columns:repeat(auto-fill,minmax(210px,1fr))">
+      <div class="stat-chip" style="background:var(--bg)"><span class="stat-chip__label">--bg<br><code>#F7F3EC / #161310</code></span></div>
+      <div class="stat-chip" style="background:var(--surface)"><span class="stat-chip__label">--surface<br><code>#FFFDF9 / #1F1B15</code></span></div>
+      <div class="stat-chip" style="background:var(--surface-2)"><span class="stat-chip__label">--surface-2<br><code>#F0EAE0 / #292319</code></span></div>
+      <div class="stat-chip" style="background:var(--accent-solid);color:var(--on-accent)"><span class="stat-chip__label" style="color:inherit">--accent-solid<br><code>#A95427 / #C96C36</code></span></div>
+      <div class="stat-chip" style="background:var(--accent-soft);color:var(--accent-text)"><span class="stat-chip__label" style="color:inherit">--accent-text<br><code>#A0522D / #D97E4A</code></span></div>
+      <div class="stat-chip" style="background:var(--secondary-soft);color:var(--secondary-strong)"><span class="stat-chip__label" style="color:inherit">--secondary<br><code>#2C5449 / #93C2AF</code></span></div>
+      <div class="stat-chip" style="background:var(--gold-soft);color:var(--gold-strong)"><span class="stat-chip__label" style="color:inherit">--gold<br><code>#7C5C1C / #E7C179</code></span></div>
+      <div class="stat-chip" style="background:var(--danger-soft);color:var(--danger-strong)"><span class="stat-chip__label" style="color:inherit">--danger<br><code>#86281F / #F0A99C</code></span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">تایپوگرافی (Vazirmatn)</h2>
+    <p style="font-size:32px;font-weight:900">۳۲ / ۹۰۰ — عنوان صفحه: داشبورد مدیریت</p>
+    <p style="font-size:24px;font-weight:900">۲۴ / ۹۰۰ — عنوان بخش: سایت‌های بازدیدشده</p>
+    <p style="font-size:19px;font-weight:800">۱۹ / ۸۰۰ — زیرعنوان: تحلیل رفتار دیجیتال</p>
+    <p style="font-size:16px;font-weight:700">۱۶ / ۷۰۰ — متن برجسته: ۱۲٬۳۴۵ بازدید</p>
+    <p style="font-size:14px">۱۴ / ۴۰۰ — متن اصلی: داده‌ها فقط دامنه و جستجو هستند، بدون مقدار حساس.</p>
+    <p class="hint">۱۲.۵ / ۵۰۰ — متن ثانویه با رنگ <code>--ink-3</code></p>
+    <p class="mono">U-0001 • sample_snapshot.json • digikala.com</p>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">دکمه‌ها</h2>
+    <div class="row-wrap">
+      <button class="btn btn--primary" type="button">افزودن کاربر</button>
+      <button class="btn btn--secondary" type="button">دریافت از تلگرام</button>
+      <button class="btn btn--ghost" type="button">انصراف</button>
+      <button class="btn btn--danger" type="button">حذف پروفایل</button>
+      <button class="btn btn--primary btn--sm" type="button">کوچک</button>
+      <button class="btn btn--secondary" type="button" disabled>غیرفعال</button>
+      <button class="btn btn--primary" type="button" id="btn-demo-load">نمایش حالت بارگذاری</button>
+      <button class="icon-btn" type="button" aria-label="تنظیمات" title="تنظیمات">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9"/><path d="M18.5 7H21"/><path d="M4 17h4"/><path d="M13.5 17H21"/><circle cx="15.5" cy="7" r="2.2"/><circle cx="10.5" cy="17" r="2.2"/></svg>
+      </button>
+      <span class="btn btn--primary is-loading" role="status"><span class="btn__spinner"></span><span>در حال تحلیل…</span></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">چیپ، بج، نشانگر وضعیت و آواتار</h2>
+    <div class="row-wrap">
+      <button class="chip is-active" type="button">همه <span class="cnt">(۱۷)</span></button>
+      <button class="chip" type="button">خرید <span class="cnt">(۶)</span></button>
+      <button class="chip" type="button">توسعه <span class="cnt">(۲)</span></button>
+      <span class="badge badge--accent">آپلود</span>
+      <span class="badge badge--secondary">تلگرام</span>
+      <span class="badge badge--gold">تحلیل‌شده</span>
+      <span class="badge badge--ok">تنظیم‌شده</span>
+      <span class="badge badge--warn">تنظیم نشده</span>
+      <span class="badge badge--danger">خطا</span>
+    </div>
+    <div class="row-wrap" style="margin-top:var(--s-4)">
+      <span class="dot dot--on"></span><span class="hint">ربات متصل</span>
+      <span class="dot dot--pending"></span><span class="hint">در حال واکشی</span>
+      <span class="dot dot--off"></span><span class="hint">تنظیم‌نشده</span>
+      <span class="grow"></span>
+      <span class="avatar avatar--1">کآ</span>
+      <span class="avatar avatar--2">گف</span>
+      <span class="avatar avatar--3">مر</span>
+      <span class="avatar avatar--4">س‌ن</span>
+      <span class="avatar avatar--5">هخ</span>
+      <span class="avatar avatar--6">ب‌پ</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">فیلد فرم</h2>
+    <div style="max-width:420px;display:flex;flex-direction:column;gap:var(--s-4)">
+      <div class="field">
+        <label class="field__label" for="sg-input">کلید AvalAI</label>
+        <div class="input-wrap">
+          <input class="field__input" id="sg-input" type="password" placeholder="••••••••" value="sk-demo">
+          <button type="button" class="eye-btn" data-eye="sg-input" aria-label="نمایش رمز">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3.2"/></svg>
+          </button>
+        </div>
+        <p class="hint">چشمی داخل فیلد؛ برای دیدن کارکرد کلیک کن.</p>
+      </div>
+      <div class="field field--invalid">
+        <label class="field__label" for="sg-input-2">رمز عبور مدیر</label>
+        <div class="input-wrap">
+          <input class="field__input" id="sg-input-2" type="password" value="wrong" aria-describedby="sg-error">
+        </div>
+        <p class="field__error" id="sg-error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5l8.5 15h-17z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/></svg>
+          <span>رمز عبور اشتباه است.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">اسکلتون‌ها</h2>
+    <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(240px,1fr))">
+      <div class="profile-card" aria-hidden="true">
+        <div class="profile-card__head">
+          <span class="sk-circle skeleton"></span>
+          <div class="grow">
+            <span class="skeleton sk-line sk-line--lg sk-line--w60"></span>
+            <span class="skeleton sk-line sk-line--w40"></span>
+          </div>
+        </div>
+        <div class="profile-card__stats">
+          <span class="skeleton sk-stat"></span><span class="skeleton sk-stat"></span><span class="skeleton sk-stat"></span>
+        </div>
+      </div>
+      <div class="kpi-card"><span class="skeleton sk-line sk-line--lg sk-line--w60"></span><span class="skeleton sk-line sk-line--w80"></span></div>
+      <div class="kpi-card"><span class="skeleton sk-line sk-line--lg sk-line--w60"></span><span class="skeleton sk-line sk-line--w80"></span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">چیپ‌های آمار زنده</h2>
+    <div class="stat-row">
+      <div class="stat-chip"><span class="stat-chip__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.5"/><path d="M2.5 19.5c0-3.3 2.9-5.7 6.5-5.7s6.5 2.4 6.5 5.7"/><path d="M16.5 5.6a3.5 3.5 0 0 1 0 6.3"/><path d="M18 14.2c2.1.6 3.6 2.2 3.6 4.3"/></svg></span><span><b class="stat-chip__num">۲</b><span class="stat-chip__label">پروفایل</span></span></div>
+      <div class="stat-chip"><span class="stat-chip__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.4 2.4 3.6 5.4 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.4-3.6-8.5S9.6 5.9 12 3.5z"/></svg></span><span><b class="stat-chip__num">۱۸</b><span class="stat-chip__label">دامنه</span></span></div>
+      <div class="stat-chip"><span class="stat-chip__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.3-4.3"/></svg></span><span><b class="stat-chip__num">۱۶</b><span class="stat-chip__label">جستجو</span></span></div>
+      <div class="stat-chip"><span class="stat-chip__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7.5 20v-6"/><path d="M12 20V6"/><path d="M16.5 20v-9"/></svg></span><span><b class="stat-chip__num">۱۷۴</b><span class="stat-chip__label">بازدید</span></span></div>
+    </div>
+  </section>
+
+  <section class="kpi-row">
+    <div class="kpi-card">
+      <span class="kpi-card__label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M7.5 20v-6"/><path d="M12 20V6"/><path d="M16.5 20v-9"/></svg><span>کل بازدیدهای ثبت‌شده</span></span>
+      <span class="kpi-card__value">۸۷</span>
+      <span class="kpi-card__foot">در بازهٔ ۳۰ روز</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card__label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/><path d="M12 3.5c2.4 2.4 3.6 5.4 3.6 8.5s-1.2 6.1-3.6 8.5c-2.4-2.4-3.6-5.4-3.6-8.5S9.6 5.9 12 3.5z"/></svg><span>دامنه‌های یکتا</span></span>
+      <span class="kpi-card__value">۹</span>
+      <span class="kpi-card__foot">۷ دستهٔ موضوعی</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card__label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.3-4.3"/></svg><span>جستجوهای یکتا</span></span>
+      <span class="kpi-card__value">۸</span>
+      <span class="kpi-card__foot">پرتکرارترین: «کفش ورزشی»</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card__label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></svg><span>کوکی امن (بدون مقدار)</span></span>
+      <span class="kpi-card__value">۲</span>
+      <span class="kpi-card__foot">فقط شمارش، بدون محتوا</span>
+    </div>
+    <div class="kpi-card">
+      <span class="kpi-card__label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12.5h3.5L9.5 5l4.5 14 3-6.5H21"/></svg><span>فعالیت نیمهٔ اخیر</span></span>
+      <span class="kpi-card__value">٪۶۳</span>
+      <span class="kpi-card__foot">سهم ۳ بازهٔ آخر</span>
+      <span class="kpi-chart" aria-hidden="true"><span class="kpi-chart__bar" style="height:34%"></span><span class="kpi-chart__bar" style="height:52%"></span><span class="kpi-chart__bar" style="height:41%"></span><span class="kpi-chart__bar" style="height:72%"></span><span class="kpi-chart__bar" style="height:88%"></span><span class="kpi-chart__bar" style="height:64%"></span><span class="kpi-chart__bar" style="height:95%"></span></span>
+    </div>
+  </section>
+
+  <section class="insight-grid">
+    <button class="insight-card insight-card--secondary" type="button">
+      <span class="insight-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17"/></svg></span>
+      <span class="insight-card__body"><span class="insight-card__title">سایت‌های بازدیدشده</span><span class="insight-card__sub">۹ دامنه در ۷ دسته</span></span>
+      <span class="insight-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg></span>
+    </button>
+    <button class="insight-card insight-card--accent" type="button">
+      <span class="insight-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.3-4.3"/></svg></span>
+      <span class="insight-card__body"><span class="insight-card__title">جستجوها</span><span class="insight-card__sub">پرتکرارترین: «کفش ورزشی» (۷ بار)</span></span>
+      <span class="insight-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg></span>
+    </button>
+    <button class="insight-card insight-card--accent" type="button">
+      <span class="insight-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.2s-7.5-4.4-7.5-9.4A4.2 4.2 0 0 1 12 8.2a4.2 4.2 0 0 1 7.5 2.6c0 5-7.5 9.4-7.5 9.4z"/></svg></span>
+      <span class="insight-card__body"><span class="insight-card__title">علاقه‌مندی‌ها</span><span class="insight-card__sub">۶ معیار تحلیل‌شدهٔ محلی</span></span>
+      <span class="insight-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg></span>
+    </button>
+    <button class="insight-card insight-card--gold" type="button">
+      <span class="insight-card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/></svg></span>
+      <span class="insight-card__body"><span class="insight-card__title">تحلیل هوش مصنوعی</span><span class="insight-card__sub">هنوز تحلیل نشده — با یک کلیک بساز</span></span>
+      <span class="insight-card__arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 6l6 6-6 6"/></svg></span>
+    </button>
+  </section>
+
+  <section>
+    <h2 class="section-title">کارت پروفایل</h2>
+    <div class="grid">
+      <article class="profile-card" tabindex="0">
+        <div class="profile-card__head">
+          <span class="avatar avatar--2" aria-hidden="true">کآ</span>
+          <div class="grow">
+            <span class="profile-card__name truncate">کاربر آزمون</span>
+            <span class="profile-card__uid">U-0001</span>
+          </div>
+          <div class="profile-card__badges">
+            <span class="badge badge--gold">نمونه</span>
+            <span class="badge badge--gold">تحلیل‌شده</span>
+          </div>
+        </div>
+        <div class="profile-card__stats">
+          <div class="pc-stat"><b>۹</b><span>دامنه</span></div>
+          <div class="pc-stat"><b>۸</b><span>جستجو</span></div>
+          <div class="pc-stat"><b>۸۷</b><span>بازدید</span></div>
+        </div>
+        <div class="profile-card__foot">
+          <span class="grow truncate">۱۰ شهریور ۱۴۰۵ • Chrome / ویندوز</span>
+          <span class="truncate mono">sample_snapshot.json</span>
+        </div>
+      </article>
+      <article class="profile-card" tabindex="0">
+        <div class="profile-card__head">
+          <span class="avatar avatar--4" aria-hidden="true">گف</span>
+          <div class="grow">
+            <span class="profile-card__name truncate">گشت‌زن فروشگاه</span>
+            <span class="profile-card__uid">U-0002</span>
+          </div>
+          <div class="profile-card__badges">
+            <span class="badge badge--secondary">تلگرام</span>
+            <span class="badge">تحلیل نشده</span>
+          </div>
+        </div>
+        <div class="profile-card__stats">
+          <div class="pc-stat"><b>۵</b><span>دامنه</span></div>
+          <div class="pc-stat"><b>۳</b><span>جستجو</span></div>
+          <div class="pc-stat"><b>۱۲۰</b><span>بازدید</span></div>
+        </div>
+        <div class="profile-card__foot">
+          <span class="grow truncate">۸ شهریور ۱۴۰۵ • Firefox / اندروید</span>
+          <span class="truncate mono">browsing-profile_U-0002.json</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">ردیف‌های drill</h2>
+    <div class="drill-list">
+      <div class="drill-row">
+        <div class="drill-row__rank">۱</div>
+        <div class="drill-row__main">
+          <div class="drill-row__title">digikala.com</div>
+          <div class="drill-row__sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></svg><span>آخرین بازدید: ۱۰ شهریور ۱۴۰۵</span></div>
+        </div>
+        <div class="drill-row__barwrap"><div class="drill-row__bar" style="width:100%"></div></div>
+        <div class="drill-row__count">۴۰ بازدید</div>
+        <div class="badge badge--secondary drill-row__cat">خرید</div>
+      </div>
+      <div class="drill-row">
+        <div class="drill-row__rank">۲</div>
+        <div class="drill-row__main">
+          <div class="drill-row__title">github.com</div>
+          <div class="drill-row__sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3.5 2"/></svg><span>آخرین بازدید: ۶ شهریور ۱۴۰۵</span></div>
+        </div>
+        <div class="drill-row__barwrap"><div class="drill-row__bar" style="width:34%"></div></div>
+        <div class="drill-row__count">۹ بازدید</div>
+        <div class="badge badge--secondary drill-row__cat">توسعه</div>
+      </div>
+      <div class="drill-row">
+        <div class="drill-row__rank">۳</div>
+        <div class="drill-row__main">
+          <div class="drill-row__title drill-row__title--fa">کفش ورزشی</div>
+          <div class="drill-row__sub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5l-4.3-4.3"/></svg><span>موتور: google</span></div>
+        </div>
+        <div class="drill-row__barwrap"><div class="drill-row__bar" style="width:56%"></div></div>
+        <div class="drill-row__count">۷ بار</div>
+        <span></span>
+      </div>
+    </div>
+  </section>
+
+  <section class="card ai-panel">
+    <header class="ai-panel__head">
+      <h2 class="ai-panel__title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/><path d="M18 14.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8z"/></svg>
+        تحلیل هوش مصنوعی — کاربر آزمون
+      </h2>
+      <span class="ai-panel__meta">تحلیل‌شده در ۱۰ شهریور ۱۴۰۵ • مدل: qwen3.8-flash</span>
+    </header>
+    <div class="ai-panel__body">
+      <section class="ai-section">
+        <h3 class="ai-section__title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20.2s-7.5-4.4-7.5-9.4A4.2 4.2 0 0 1 12 8.2a4.2 4.2 0 0 1 7.5 2.6c0 5-7.5 9.4-7.5 9.4z"/></svg> علاقه‌مندی‌های شناسایی‌شده</h3>
+        <div class="ai-chips">
+          <span class="ai-chip"><b>قوی</b> خرید پوشاک — الگوی تکرارشونده در آخرهفته‌ها</span>
+          <span class="ai-chip"><b>متوسط</b> فناوری — پیگیری اخبار و ابزارهای توسعه</span>
+        </div>
+      </section>
+      <section class="ai-section">
+        <h3 class="ai-section__title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12.5h3.5L9.5 5l4.5 14 3-6.5H21"/></svg> تحلیل رفتاری و شخصیت</h3>
+        <p class="ai-text">کاربر با الگوی «مقایسه‌محور» خرید می‌کند: ابتدا در چند فروشگاه جستجو می‌کند و در ادامه به یک برند مشخص می‌رسد.</p>
+      </section>
+      <section class="ai-section">
+        <h3 class="ai-section__title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/></svg> پیش‌بینی نیازهای بعدی</h3>
+        <ul class="ai-bullets">
+          <li>لوازم ورزشی ردهٔ میان‌قیمت</li>
+          <li>هدفون بی‌سیم با تمرکز روی کاهش نویز</li>
+          <li>لوازم دیجیتال مصرفی برای کار از خانه</li>
+        </ul>
+      </section>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">توست و پیام‌ها</h2>
+    <div class="toast-wrap" style="position:static;padding:0">
+      <div class="toast toast--ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5l5 5 10-11"/></svg><span>۱ پروفایل اضافه شد</span></div>
+      <div class="toast toast--err"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4.5l8.5 15h-17z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".95" fill="currentColor" stroke="none"/></svg><span>اطلاعات ربات تلگرام کامل نیست. از تنظیمات وارد کنید.</span></div>
+      <div class="toast toast--info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".95" fill="currentColor" stroke="none"/></svg><span>فایل جدیدی در چت ربات نبود.</span></div>
+    </div>
+    <div class="notice" style="margin-top:var(--s-4)">موردی مطابق این فیلتر پیدا نشد.</div>
+  </section>
+
+  <section class="card">
+    <h2 class="section-title">حالت خالی و سه مسیر</h2>
+    <div class="empty-state" style="border:none;box-shadow:none;padding:0">
+      <div class="empty-art"><svg viewBox="0 0 320 190" fill="none" role="img" aria-label="تصویرسازی خطی: پنجرهٔ مرور با نمودار، هواپیمای کاغذی و فایل داده">
+        <!-- پنجرهٔ مرور -->
+        <rect x="34" y="30" width="188" height="126" rx="14" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.8"/>
+        <path d="M34 56h188" stroke="var(--line-strong)" stroke-width="1.8"/>
+        <circle cx="50" cy="43" r="3.2" fill="var(--line-strong)"/>
+        <circle cx="61" cy="43" r="3.2" fill="var(--line-strong)"/>
+        <circle cx="72" cy="43" r="3.2" fill="var(--line-strong)"/>
+        <!-- نمودار میله‌ای = داده -->
+        <path d="M54 136h148" stroke="var(--line-strong)" stroke-width="1.8" stroke-linecap="round"/>
+        <rect x="64" y="102" width="16" height="34" rx="4" fill="var(--accent)" opacity=".34"/>
+        <rect x="90" y="84" width="16" height="52" rx="4" fill="var(--accent)" opacity=".52"/>
+        <rect x="116" y="112" width="16" height="24" rx="4" fill="var(--accent)" opacity=".3"/>
+        <rect x="142" y="74" width="16" height="62" rx="4" fill="var(--accent)" opacity=".82"/>
+        <rect x="168" y="94" width="16" height="42" rx="4" fill="var(--accent)" opacity=".58"/>
+        <!-- ذره‌بین -->
+        <circle cx="234" cy="132" r="18" stroke="var(--secondary)" stroke-width="2.4"/>
+        <path d="M247 145l13 13" stroke="var(--secondary)" stroke-width="2.4" stroke-linecap="round"/>
+        <!-- هواپیمای کاغذی (تلگرام) -->
+        <g stroke="var(--accent)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" transform="translate(14 6) scale(.92)">
+          <path d="M21 3.5L10.5 14"/>
+          <path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/>
+        </g>
+        <!-- فایل داده -->
+        <path d="M258 100h30l16 16v42a4 4 0 0 1-4 4h-42a4 4 0 0 1-4-4v-54a4 4 0 0 1 4-4z" fill="var(--surface)" stroke="var(--line-strong)" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M288 100v12a4 4 0 0 0 4 4h12" stroke="var(--line-strong)" stroke-width="1.8" stroke-linejoin="round"/>
+        <path d="M264 130h28" stroke="var(--secondary)" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M264 140h18" stroke="var(--line-strong)" stroke-width="1.8" stroke-linecap="round"/>
+        <!-- عناصر تزئینی -->
+        <path d="M300 34v12M294 40h12" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="24" cy="150" r="3.4" fill="var(--gold)" opacity=".8"/>
+        <path d="M124 12l2.4 5.6L132 20l-5.6 2.4L124 28l-2.4-5.6L116 20l5.6-2.4z" fill="var(--accent)" opacity=".45"/>
+      </svg></div>
+      <div>
+        <p class="empty-state__title">هنوز پروفایلی اینجا نیست</p>
+        <p class="empty-state__text">فایل JSON افزونه را آپلود کن، از چت ربات تلگرام واکشی کن، یا با یک پروفایل نمونه شروع کن.</p>
+      </div>
+      <div class="path-grid">
+        <button class="path-card path-card--primary" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 3.5L10.5 14"/><path d="M21 3.5l-6.8 17-3.2-6.6-6.5-3.4z"/></svg><span class="path-card__title">دریافت از تلگرام</span><span class="path-card__sub">واکشی فایل‌های چت ربات</span></button>
+        <button class="path-card" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.5"/><path d="M12 4v11"/><path d="M7.5 8.5L12 4l4.5 4.5"/></svg><span class="path-card__title">آپلود فایل JSON</span><span class="path-card__sub">یا همین‌جا رهایش کن</span></button>
+        <button class="path-card" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4l1.6 3.9L16.5 9.5l-3.9 1.6L11 15l-1.6-3.9L5.5 9.5l3.9-1.6z"/></svg><span class="path-card__title">پروفایل نمونه</span><span class="path-card__sub">آشنایی سریع با داشبورد</span></button>
+      </div>
+      <div class="dropzone">
+        <span class="dropzone__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2.5"/><path d="M12 4v11"/><path d="M7.5 8.5L12 4l4.5 4.5"/></svg></span>
+        <span>فایل را اینجا رها کن یا کلیک کن</span>
+        <span class="dropzone__hint">فقط JSON افزونهٔ خریدار پرو • چند فایل هم‌زمان</span>
+      </div>
+    </div>
+  </section>
+
+  <p class="hint">در موبایل (≤۷۶۸px) نوار پایین با سه بخش «پروفایل‌ها / دریافت از تلگرام / منو» و دکمهٔ شناور «افزودن» پایین-چپ ظاهر می‌شوند؛ مودال‌ها به bottom-sheet تمام‌عرض تبدیل می‌شوند و کارت‌های KPI با scroll-snap افقی می‌چرخند. همین صفحه را در عرض ۳۶۰ تا ۱۴۴۰ ببین.</p>
+</main>
+
+<script src="/static/app-core.js"></script>
+<script>
+(function () {
+  'use strict';
+  App.wireShell();
+  var demo = document.getElementById('btn-demo-load');
+  demo.addEventListener('click', function () {
+    App.btnLoading(demo, true, 'در حال بارگذاری…');
+    setTimeout(function () { App.btnLoading(demo, false); }, 1400);
+  });
+})();
+</script>
+</body>
+</html>
