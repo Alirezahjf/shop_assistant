@@ -312,7 +312,10 @@ async def api_tg_status(_: None = Depends(require_admin)):
 @app.post("/api/telegram/poll")
 async def api_tg_poll(_: None = Depends(require_admin)):
     """یک دور واکشی: همه آپدیت‌های جدید؛ فایل‌های JSON چت ادمین ایمپورت می‌شوند."""
-    cfg = tg.get_config()
+    try:
+        cfg = tg.get_config()
+    except tg.NotConfigured as e:
+        raise HTTPException(400, str(e))
     token, admin_chat = cfg["token"], cfg["chat_id"]
 
     with db.get_db() as conn:
@@ -405,7 +408,10 @@ async def api_send_profile_tg(uid: str, _: None = Depends(require_admin)):
         row = db.get_profile(conn, uid)
     if not row:
         raise HTTPException(404, "پروفایل یافت نشد.")
-    cfg = tg.get_config()
+    try:
+        cfg = tg.get_config()
+    except tg.NotConfigured as e:
+        raise HTTPException(400, str(e))
     meta = profile_row_to_dict(row)
     content = json.dumps(json.loads(row["snapshot_json"]), ensure_ascii=False, indent=2)
     caption = "\n".join([
