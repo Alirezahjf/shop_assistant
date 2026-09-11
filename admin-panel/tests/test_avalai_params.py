@@ -114,6 +114,7 @@ class _FakeClient:
 
 
 def test_falls_back_to_legacy_max_tokens_on_unknown_parameter(monkeypatch):
+    avalai._reset_state_for_tests()
     bad = _FakeResponse(400, text="Unknown parameter: 'max_completion_tokens'")
     ok = _FakeResponse(200, payload={
         "choices": [{"message": {"content": "متصل"}}], "model": "qwen3.8-flash"})
@@ -128,6 +129,7 @@ def test_falls_back_to_legacy_max_tokens_on_unknown_parameter(monkeypatch):
 
 
 def test_request_id_header_is_not_raised_and_request_is_authenticated(monkeypatch):
+    avalai._reset_state_for_tests()
     ok = _FakeResponse(200,
                        payload={"choices": [{"message": {"content": "ok"}}], "model": "qwen3.8-flash"},
                        headers={"avalai-request-id": "019ac4a0-a8f4-7041-845f-3ea8f15dcf1a"})
@@ -140,6 +142,7 @@ def test_request_id_header_is_not_raised_and_request_is_authenticated(monkeypatc
 
 
 def test_list_models_prefers_authenticated_endpoint(monkeypatch):
+    avalai._reset_state_for_tests()
     ok = _FakeResponse(200, payload={"data": [{"id": "qwen3.8-flash"}, {"id": "glm-5.3-flash"}]})
     fake = _FakeClient([ok])
     monkeypatch.setattr(avalai.httpx, "Client", lambda *a, **kw: fake)
@@ -150,6 +153,7 @@ def test_list_models_prefers_authenticated_endpoint(monkeypatch):
 
 
 def test_list_models_falls_back_to_public_catalog(monkeypatch):
+    avalai._reset_state_for_tests()
     fail = _FakeResponse(401, text="unauthorized")
     ok = _FakeResponse(200, payload={"data": [{"id": "gpt-6-astra"}]})
     fake = _FakeClient([fail, ok])
@@ -160,6 +164,7 @@ def test_list_models_falls_back_to_public_catalog(monkeypatch):
 
 
 def test_list_models_returns_empty_list_on_total_failure(monkeypatch):
+    avalai._reset_state_for_tests()
     fake = _FakeClient([])
     monkeypatch.setattr(avalai.httpx, "Client", lambda *a, **kw: fake)
 
