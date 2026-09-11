@@ -148,9 +148,21 @@ async function api(path, options = {}) {
   try { data = await res.json(); } catch { data = {}; }
   if (res.status === 401) {
     location.href = '/login';
-    throw new Error('نشست منقضی شد — دوباره وارد شوید.');
+    const err = new Error('نشست منقضی شد — دوباره وارد شوید.');
+    err.status = 401;
+    throw err;
   }
-  if (!res.ok) throw new Error(data.error || `خطای سرور (${res.status})`);
+  if (!res.ok) {
+    const msg = data.error || `خطای سرور (${res.status})`;
+    const err = new Error(msg);
+    err.status = res.status;
+    const raJson = data.retryAfter || data.retry_after;
+    const raHeader = res.headers.get('Retry-After') || res.headers.get('retry-after');
+    const ra = raJson != null ? parseInt(raJson, 10) : (raHeader ? parseInt(raHeader, 10) : null);
+    err.retryAfter = ra && !isNaN(ra) ? ra : null;
+    err.data = data;
+    throw err;
+  }
   return data;
 }
 
@@ -409,6 +421,32 @@ function wireSettings() {
     finally { btnLoading(btn, false); }
   });
 
+  // هندل 429 با شمارش معکوس برای تست اتصال
+  let aiTestRetryTimer = null;
+  function startAiTestCountdown(sec, btn) {
+    if (aiTestRetryTimer) clearInterval(aiTestRetryTimer);
+    let remaining = sec;
+    const tick = () => {
+      btn.disabled = true;
+      btn.textContent = `صبر ${faNum(remaining)} ثانیه`;
+    };
+    tick();
+    aiTestRetryTimer = setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        clearInterval(aiTestRetryTimer);
+        aiTestRetryTimer = null;
+        btn.disabled = false;
+        if (btn.dataset.originalHtml) {
+          btn.innerHTML = btn.dataset.originalHtml;
+          delete btn.dataset.originalHtml;
+        }
+        return;
+      }
+      btn.textContent = `صبر ${faNum(remaining)} ثانیه`;
+    }, 1000);
+  }
+
   $('btn-test-ai')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
     btnLoading(btn, true, 'در حال تست…');
@@ -418,8 +456,23 @@ function wireSettings() {
         body: JSON.stringify({ aiKey: $('set-ai-key')?.value.trim(), model: currentModelValue() }),
       });
       toast(`اتصال موفق — پاسخ نمونه: ${r.sample}`, 'ok', 5000);
-    } catch (err) { toast(err.message, 'err'); }
-    finally { btnLoading(btn, false); }
+    } catch (err) {
+      if (err.status === 429) {
+        const ra = err.retryAfter || 30;
+        toast(`${esc(err.message)} — ${faNum(ra)} ثانیه دیگر`, 'err', 4000);
+        btnLoading(btn, false);
+        startAiTestCountdown(ra, btn);
+        return;
+      }
+      if (err.status === 409) {
+        toast(err.message, 'info', 4000);
+      } else {
+        toast(err.message, 'err');
+      }
+    }
+    finally {
+      if (!aiTestRetryTimer) btnLoading(btn, false);
+    }
   });
 
   $('btn-save-tg')?.addEventListener('click', async (e) => {
@@ -469,11 +522,14 @@ function wireSettings() {
     btnLoading(btn, true, 'در حال دریافت…');
     try {
       const r = await api('/api/models');
+      if (r.rateLimited) {
+        const ra = r.retryAfter || 30;
+        toast(`محدودیت نرخ — فهرست ایستا نمایش داده می‌شود (${faNum(ra)} ثانیه)`, 'info', 4000);
+      }
       const models = (r.models || []).map((m) => (typeof m === 'string' ? m : m.id)).filter(Boolean);
       const sel = $('set-model');
       if (sel && models.length) {
         const current = currentModelValue();
-        // گزینهٔ «سفارشی» را حفظ می‌کنیم و بقیه را از پاسخ سرور می‌سازیم
         const customOpt = sel.querySelector('option[value="custom"]');
         sel.innerHTML = '';
         for (const id of models.slice(0, 400)) {
@@ -489,14 +545,20 @@ function wireSettings() {
         const hint = $('model-source-hint');
         if (hint) {
           hint.textContent = r.source === 'static'
-            ? 'دسترسی به AvalAI برقرار نبود؛ فهرست ایستای مستندات نمایش داده می‌شود.'
+            ? `دسترسی به AvalAI برقرار نبود؛ فهرست ایستای مستندات نمایش داده می‌شود.${r.rateLimited ? ` (${faNum(r.retryAfter||30)} ثانیه)` : ''}`
             : `فهرست زنده از AvalAI دریافت شد (${models.length} مدل).`;
         }
-        toast(`فهرست مدل‌ها به‌روز شد — ${models.length} مدل`, 'ok');
+        if (!r.rateLimited) toast(`فهرست مدل‌ها به‌روز شد — ${models.length} مدل`, 'ok');
       } else {
         toast('مدلی از سرور دریافت نشد.', 'err');
       }
-    } catch (err) { toast(err.message, 'err'); }
+    } catch (err) {
+      if (err.status === 429) {
+        toast(`محدودیت نرخ AvalAI — ${faNum(err.retryAfter||30)} ثانیه دیگر`, 'err', 4000);
+      } else {
+        toast(err.message, 'err');
+      }
+    }
     finally { btnLoading(btn, false); }
   });
 

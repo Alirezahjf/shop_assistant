@@ -369,6 +369,41 @@ function advanceAiSteps() {
   return () => timers.forEach(clearTimeout);
 }
 
+// مدیریت 429 با شمارش معکوس و disabled روی دکمه تحلیل
+let retryTimer = null;
+function startRetryCountdown(seconds, btn) {
+  if (retryTimer) clearInterval(retryTimer);
+  let remaining = seconds;
+  const label = $('btn-analyze-label');
+  const update = () => {
+    const txt = `تلاش مجدد تا ${faNum(remaining)} ثانیه`;
+    if (btn) {
+      btn.disabled = true;
+      if (label) label.textContent = txt;
+      else btn.textContent = txt;
+    }
+    toast(`محدودیت نرخ AvalAI — ${faNum(remaining)} ثانیه دیگر`, 'err', 1200);
+  };
+  update();
+  retryTimer = setInterval(() => {
+    remaining -= 1;
+    if (remaining <= 0) {
+      clearInterval(retryTimer);
+      retryTimer = null;
+      if (btn) {
+        btn.disabled = false;
+        if (label) label.textContent = 'تحلیل هوشمند';
+      }
+      App.btnLoading(btn, false);
+      state.busy = false;
+      return;
+    }
+    if (btn) {
+      if (label) label.textContent = `تلاش مجدد تا ${faNum(remaining)} ثانیه`;
+    }
+  }, 1000);
+}
+
 async function runAnalysis() {
   if (state.busy) return;
   state.busy = true;
@@ -394,6 +429,39 @@ async function runAnalysis() {
     toast('تحلیل هوشمند ذخیره شد', 'ok');
   } catch (e) {
     stopSteps();
+    // 429 → شمارش معکوس و disabled
+    if (e.status === 429) {
+      const ra = e.retryAfter || 30;
+      $('ai-panel-meta').textContent = `محدودیت نرخ — ${faNum(ra)} ثانیه`;
+      body.innerHTML = `
+        <div class="ai-error">
+          <span class="ai-error__icon">${icon('alert')}</span>
+          <p>${esc(e.message)}</p>
+          <span class="hint">سهم نرخ/اعتبار حساب AvalAI پر شده؛ ${faNum(ra)} ثانیه دیگر دوباره تلاش کنید. اگر ادامه داشت، اعتبار حساب را در chat.avalai.ir/platform/home بررسی کن.</span>
+          <button class="btn btn--secondary btn--sm" id="ai-retry" disabled>${icon('clock')}<span>تلاش مجدد تا ${faNum(ra)} ثانیه</span></button>
+        </div>`;
+      startRetryCountdown(ra, btn);
+      toast(`${esc(e.message)} — ${faNum(ra)} ثانیه صبر`, 'err', 4000);
+      return;
+    }
+    // 409 single-flight → toast بدون رفرش خودکار
+    if (e.status === 409) {
+      $('ai-panel-meta').textContent = 'در حال انجام';
+      body.innerHTML = `
+        <div class="ai-error">
+          <span class="ai-error__icon">${icon('clock')}</span>
+          <p>${esc(e.message)}</p>
+          <span class="hint">تحلیل دیگری در حال اجراست؛ لطفاً صبر کنید.</span>
+          <button class="btn btn--primary btn--sm" id="ai-retry">${icon('refresh')}<span>تلاش مجدد</span></button>
+        </div>`;
+      $('ai-retry')?.addEventListener('click', runAnalysis);
+      toast(e.message, 'info', 4000);
+      // busy را آزاد نکن تا دکمه دوباره فعال شود؟ اما اجازه تلاش مجدد می‌دهیم
+      state.busy = false;
+      App.btnLoading(btn, false);
+      if (label) label.textContent = 'تحلیل هوشمند';
+      return;
+    }
     $('ai-panel-meta').textContent = 'ناموفق';
     body.innerHTML = `
       <div class="ai-error">
@@ -405,9 +473,11 @@ async function runAnalysis() {
     $('ai-retry')?.addEventListener('click', runAnalysis);
     toast(e.message, 'err', 5000);
   } finally {
-    state.busy = false;
-    App.btnLoading(btn, false);
-    if (label) label.textContent = 'تحلیل هوشمند';
+    if (retryTimer == null) {
+      state.busy = false;
+      App.btnLoading(btn, false);
+      if (label && !btn.disabled) label.textContent = 'تحلیل هوشمند';
+    }
   }
 }
 

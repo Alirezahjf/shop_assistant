@@ -424,8 +424,38 @@ async def api_send_profile_tg(uid: str, _: None = Depends(require_admin)):
 
 
 # ---------------------------------------------------------------------------
-# API — تحلیل هوش مصنوعی
+# API — تحلیل هوش مصنوعی — نگاشت دقیق خطاهای AvalAI طبق docs.avalai.ir
 # ---------------------------------------------------------------------------
+def _map_avalai_error_to_json_response(e: avalai.AvalAiError) -> JSONResponse:
+    """نگاشت AvalAiError به پاسخ HTTP با کد درست و هدر Retry-After."""
+    # 429 → 429 با Retry-After
+    if e.status == 429:
+        retry_after = int(e.retry_after) if e.retry_after and e.retry_after > 0 else 30
+        # حداقل 1 ثانیه
+        retry_after = max(1, retry_after)
+        return JSONResponse(
+            {"ok": False, "error": str(e), "retryAfter": retry_after},
+            status_code=429,
+            headers={"Retry-After": str(retry_after)},
+        )
+    # single-flight → 409
+    if e.status == 409:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=409)
+    # 401/402/403/404/422/400 → 400 با پیام اختصاصی
+    if e.status in (401, 402, 403, 404, 422, 400):
+        # برای 401/402/403/404 پیام فارسی استاندارد از _ERROR_MESSAGES
+        msg = avalai._ERROR_MESSAGES.get(e.status, str(e)) if e.status in (401, 402, 403, 404) else str(e)
+        # برای 402 پیام دقیق طبق پرامپت
+        if e.status == 402:
+            msg = avalai._ERROR_MESSAGES.get(402, str(e))
+        return JSONResponse({"ok": False, "error": msg}, status_code=400)
+    # 5xx یا خطای شبکه (status None) → 502
+    if e.status is None or (e.status and e.status >= 500):
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=502)
+    # سایر موارد → 400
+    return JSONResponse({"ok": False, "error": str(e)}, status_code=400)
+
+
 @app.post("/api/profiles/{uid}/analyze")
 async def api_analyze(uid: str, _: None = Depends(require_admin)):
     with db.get_db() as conn:
@@ -436,8 +466,7 @@ async def api_analyze(uid: str, _: None = Depends(require_admin)):
     try:
         result = analysis.analyze_snapshot(snapshot)
     except avalai.AvalAiError as e:
-        status = 400 if e.status in (401, 402, 404) or e.status is None else 502
-        raise HTTPException(status, str(e))
+        return _map_avalai_error_to_json_response(e)
     with db.get_db() as conn:
         db.save_analysis(conn, uid, result, result.get("model", AVALAI_MODEL))
     return {"ok": True, "analysis": result}
@@ -454,7 +483,7 @@ async def api_ai_test(payload: dict = None, _: None = Depends(require_admin)):
         r = avalai.test_connection(key, model)
         return {"ok": True, "sample": r["text"][:40]}
     except avalai.AvalAiError as e:
-        raise HTTPException(502, str(e))
+        return _map_avalai_error_to_json_response(e)
 
 
 # ---------------------------------------------------------------------------
@@ -482,6 +511,22 @@ async def api_settings_avalai(payload: dict, _: None = Depends(require_admin)):
     if model:
         security.set_secret("avalai_model", model[:80])
     return {"ok": True}
+
+
+# برای تست مودال تنظیمات: اگر کلید نامعتبر باشد، همان نگاشت خطا را اعمال کن
+@app.post("/api/settings/avalai/test")
+async def api_settings_avalai_test(payload: dict = None, _: None = Depends(require_admin)):
+    # این endpoint اختیاری است؛ اگر فراخوانی شد، همان نگاشت را اعمال می‌کند
+    payload = payload or {}
+    key = str(payload.get("aiKey") or "").strip() or AVALAI_API_KEY or security.get_secret("avalai_key")
+    if not key:
+        raise HTTPException(400, "کلید AvalAI تنظیم نشده است.")
+    model = str(payload.get("model") or security.get_secret("avalai_model") or AVALAI_MODEL)
+    try:
+        r = avalai.test_connection(key, model)
+        return {"ok": True, "sample": r["text"][:40]}
+    except avalai.AvalAiError as e:
+        return _map_avalai_error_to_json_response(e)
 
 
 @app.post("/api/settings/telegram")
@@ -541,13 +586,23 @@ async def ext_chat(request: Request):
         return JSONResponse({"ok": False, "error": str(e)}, status_code=e.status)
     except avalai.AvalAiError as e:
         # نگاشت دقیق کدهای مستندات به پاسخ (۴۰۲ اعتبار، ۴۰۴ مدل، ۴۲۹ محدودیت نرخ…)
+        if e.status == 429:
+            ra = int(e.retry_after) if e.retry_after else 30
+            return JSONResponse({"ok": False, "error": str(e), "retryAfter": ra},
+                                status_code=429, headers={"Retry-After": str(ra)})
+        if e.status == 409:
+            return JSONResponse({"ok": False, "error": str(e)}, status_code=409)
         if e.status and 400 <= e.status < 500 and not e.retryable:
             status = e.status
         elif e.retryable:
             status = 429 if e.status == 429 else 503
         else:
             status = 502
-        return JSONResponse({"ok": False, "error": str(e)}, status_code=status)
+        # برای 429 هدر Retry-After اضافه کن
+        hdrs = {}
+        if e.status == 429 and e.retry_after:
+            hdrs["Retry-After"] = str(int(e.retry_after))
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=status, headers=hdrs if hdrs else None)
     return {"ok": True, "reply": result["reply"]}
 
 
@@ -564,9 +619,16 @@ async def ext_models():
     مستندات: GET /v1/models (با کلید) و GET /public/models (بدون کلید).
     اگر هیچ‌کدام در دسترس نبود، فهرست ایستای هم‌تراز با مستندات برمی‌گردد.
     شکل پاسخ: {"ok": true, "models": [{"id": "..."}], "source": "avalai|public|static"}
+    کش ده‌دقیقه‌ای per-key در avalai.list_models دارد؛ 429 soft-fail.
     """
     key = security.get_secret("avalai_key") or AVALAI_API_KEY
-    models = avalai.list_models(key)
+    try:
+        models = avalai.list_models(key)
+    except avalai.AvalAiError as e:
+        if e.status == 429:
+            # soft-fail: فهرست ایستا
+            return {"ok": True, "models": [{"id": m} for m in AVALAI_KNOWN_MODELS], "source": "static", "rateLimited": True, "retryAfter": int(e.retry_after) if e.retry_after else 30}
+        models = []
     if models:
         return {"ok": True, "models": models, "source": "avalai" if key else "public"}
     return {"ok": True, "models": [{"id": m} for m in AVALAI_KNOWN_MODELS], "source": "static"}
@@ -578,9 +640,18 @@ async def api_models(_: None = Depends(require_admin)):
     «افزودنی» — فهرست مدل‌ها برای مودال تنظیمات پنل (نیازمند نشست مدیر).
     از /v1/models با کلیدِ ذخیره‌شده پر می‌شود و در صورت عدم دسترسی به فهرست
     ایستای مستندات برمی‌گردد.
+    کش ده‌دقیقه‌ای per-key دارد؛ خطای 429 مودال تنظیمات را نمی‌شکند (soft-fail).
     """
     key = security.get_secret("avalai_key") or AVALAI_API_KEY
-    models = avalai.list_models(key)
+    try:
+        models = avalai.list_models(key)
+    except avalai.AvalAiError as e:
+        if e.status == 429:
+            # soft-fail: برگرداندن فهرست ایستا با 200، نه 429
+            ra = int(e.retry_after) if e.retry_after else 30
+            return {"ok": True, "models": [{"id": m} for m in AVALAI_KNOWN_MODELS], "source": "static", "rateLimited": True, "retryAfter": ra}
+        # سایر خطاها هم soft-fail به ایستا
+        return {"ok": True, "models": [{"id": m} for m in AVALAI_KNOWN_MODELS], "source": "static"}
     if models:
         return {"ok": True, "models": models, "source": "avalai" if key else "public"}
     return {"ok": True, "models": [{"id": m} for m in AVALAI_KNOWN_MODELS], "source": "static"}
