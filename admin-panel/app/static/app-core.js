@@ -204,6 +204,32 @@ function btnLoading(btn, loading, label) {
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [contenteditable="true"], [tabindex]:not([tabindex="-1"])';
 let lastFocus = null;
 
+// ── اسکرول مستقل هر باکس (.scroll-box) ───────────────────────────────────
+// بررسی scrollHeight>clientHeight هنگام باز شدن مودال + listener روی scroll
+// برای فید پایین گرادیان (is-scrollable / is-at-bottom)
+function updateScrollableState(container) {
+  const bodies = container.querySelectorAll('.set-section__body, .scroll-box__body, .ai-panel__body, #drill-body');
+  bodies.forEach((el) => {
+    if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '0');
+    const scrollable = el.scrollHeight > el.clientHeight + 4;
+    el.classList.toggle('is-scrollable', scrollable);
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+    el.classList.toggle('is-at-bottom', !!(scrollable && atBottom));
+    if (scrollable && !el.getAttribute('aria-label')) {
+      el.setAttribute('aria-label', 'محتوای قابل اسکرول');
+    }
+  });
+}
+
+function wireScrollableBody(el) {
+  if (!el || el._scrollWired) return;
+  el._scrollWired = true;
+  el.addEventListener('scroll', () => {
+    const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+    el.classList.toggle('is-at-bottom', !!atBottom);
+  }, { passive: true });
+}
+
 function openModal(id) {
   const m = typeof id === 'string' ? $(id) : id;
   if (!m) return;
@@ -212,6 +238,10 @@ function openModal(id) {
   m.setAttribute('role', 'dialog');
   m.setAttribute('aria-modal', 'true');
   const panel = m.querySelector('.modal') || m;
+  setTimeout(() => {
+    updateScrollableState(panel);
+    panel.querySelectorAll('.set-section__body, .scroll-box__body, .ai-panel__body, #drill-body').forEach(wireScrollableBody);
+  }, 80);
   const auto = panel.querySelector('[data-autofocus]') ||
     panel.querySelector('input:not([type="hidden"]), select, textarea') ||
     panel.querySelector(FOCUSABLE);

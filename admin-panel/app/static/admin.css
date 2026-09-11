@@ -894,6 +894,149 @@ img { max-width: 100%; }
 .set-section__body { padding: var(--s-4); display: flex; flex-direction: column; gap: var(--s-3); }
 .set-state { margin-inline-start: auto; }
 
+/* ============================================================================
+   افزوده‌های نگارش ۲.۳ — اسکرول مستقل هر باکس مودال تنظیمات
+   ----------------------------------------------------------------------------
+   هدف: در مودال «تنظیمات پنل» (AvalAI / ربات تلگرام / امنیت) کاربر در هر
+   ارتفاع صفحه‌ای بتواند داخل خودِ هر کارت تا انتها اسکرول کند — بدون
+   وابستگی به اسکرول کلی مودال؛ تا مسئلهٔ «ریسپانسیو نبودن ارتفاع» بی‌معنا شود.
+   الگو: fallback اول vh، بعد svh (همان الگوی پروژه برای ارتفاع‌های واقعی).
+   ============================================================================ */
+
+/* ── کانتینر مشترک .scroll-box — هر کارت محدود-ارتفاع ─────────────────────
+   .set-section همان کارت است؛ .scroll-box کلاس مشترک برای جلوگیری از تکرار
+   و برای اعمال روی بخش‌های بلند دیگر مودال‌ها (#modal-drill / .ai-panel) */
+.scroll-box,
+.set-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden; /* فعلیِ .set-section حفظ */
+  position: relative;
+  max-height: min(64vh, 520px);
+  max-height: min(64svh, 520px);
+}
+
+/* ── بدنهٔ اسکرول‌شونده داخل .scroll-box ───────────────────────────────────
+   .set-section__body به‌عنوان بدنهٔ .scroll-box: overflow-y:auto و ... */
+.set-section__body,
+.scroll-box__body,
+.ai-panel__body,
+#drill-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
+  /* حفظ پدینگ فعلی + افزایش padding-inline-end برای جلوگیری از نشستن
+     اسکرول‌بار روی دکمهٔ چشمی field__eye (موقعیت inset-inline-end) */
+  padding-inline-end: calc(var(--s-4) + 8px);
+}
+
+/* اسکرول‌بار نازک — الگو از popup.css ~خط 131 */
+.set-section__body::-webkit-scrollbar,
+.scroll-box__body::-webkit-scrollbar,
+.ai-panel__body::-webkit-scrollbar,
+#drill-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.set-section__body::-webkit-scrollbar-track,
+.scroll-box__body::-webkit-scrollbar-track,
+.ai-panel__body::-webkit-scrollbar-track,
+#drill-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.set-section__body::-webkit-scrollbar-thumb,
+.scroll-box__body::-webkit-scrollbar-thumb,
+.ai-panel__body::-webkit-scrollbar-thumb,
+#drill-body::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: var(--r-full);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.set-section__body::-webkit-scrollbar-thumb:hover,
+.scroll-box__body::-webkit-scrollbar-thumb:hover,
+.ai-panel__body::-webkit-scrollbar-thumb:hover,
+#drill-body::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-3);
+  background-clip: padding-box;
+}
+
+/* دسترسی‌پذیری: فوکوس کیبورد روی بدنهٔ اسکرول‌شونده + tabindex="0" */
+.set-section__body:focus-visible,
+.scroll-box__body:focus-visible,
+.ai-panel__body:focus-visible,
+#drill-body:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--r-1);
+}
+
+/* ── فید پایین گرادیان هم‌رنگ surface ────────────────────────────────────
+   وقتی .is-scrollable هست و کاربر هنوز به انتها نرسیده، گرادیان پایین دیده می‌شود.
+   JS کلاس is-scrollable را هنگام باز شدن مودال (scrollHeight>clientHeight) می‌زند
+   و is-at-bottom را هنگام رسیدن به انتها. */
+.set-section__body.is-scrollable:not(.is-at-bottom)::after,
+.scroll-box__body.is-scrollable:not(.is-at-bottom)::after,
+.ai-panel__body.is-scrollable:not(.is-at-bottom)::after,
+#drill-body.is-scrollable:not(.is-at-bottom)::after {
+  content: '';
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: block;
+  height: 28px;
+  margin-top: -28px;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* برای اینکه فید روی محتوای آخرین فیلد نیفتد، کمی پدینگ پایین اضافه */
+.set-section__body.is-scrollable,
+.scroll-box__body.is-scrollable {
+  padding-bottom: calc(var(--s-4) + 12px);
+}
+
+/* RTL: اسکرول‌بار نباید روی دکمه‌های field__eye (inset-inline-end) بنشیند */
+[dir="rtl"] .set-section__body,
+[dir="rtl"] .scroll-box__body {
+  padding-inline-end: calc(var(--s-4) + 12px);
+}
+
+/* ── ریسپانسیو: موبایل ───────────────────────────────────────────────────
+   190px تقریبی برای هدر چسبان مودال + فوتر «ذخیرهٔ همه تنظیمات» + پدینگ‌ها؛
+   با رندر واقعی کالیبره شد تا هیچ‌وقت روی محتوای کارت نیفتند. */
+@media (max-width: 768px) {
+  .scroll-box,
+  .set-section {
+    max-height: calc(96vh - var(--topbar-h) - 190px);
+    max-height: calc(96svh - var(--topbar-h) - 190px);
+  }
+  .ai-panel__body,
+  #drill-body {
+    max-height: calc(96vh - var(--topbar-h) - 160px);
+    max-height: calc(96svh - var(--topbar-h) - 160px);
+  }
+}
+
+/* ── باند میانه 769–1024px (حالت سایت دسکتاپ کروم روی موبایل با 980px) ───
+   مقدار میانه مثل min(52svh, 440px) + fallback vh */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .scroll-box,
+  .set-section {
+    max-height: min(52vh, 440px);
+    max-height: min(52svh, 440px);
+  }
+  .ai-panel__body,
+  #drill-body {
+    max-height: min(60vh, 520px);
+    max-height: min(60svh, 520px);
+  }
+}
+
 /* ── تأییدیه ──────────────────────────────────────────────────────── */
 .confirm-body { display: flex; flex-direction: column; gap: var(--s-3); align-items: flex-start; }
 .confirm-icon {
