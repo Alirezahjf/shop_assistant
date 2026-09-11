@@ -504,6 +504,11 @@ img { max-width: 100%; }
   flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   padding: var(--s-5); display: flex; flex-direction: column; gap: var(--s-4);
 }
+/* رفع باگ بریدگی مودال‌های کوتاه: فرزندانِ مستقیم بدنه هرگز جمع نمی‌شوند؛
+   کم‌ارتفاعیِ صفحه (موبایل/لنداسکیپ/حالت دسکتاپ کروم با ۹۸۰px) با اسکرولِ
+   خودِ modal-body مدیریت می‌شود. بدون این خط، .set-section با overflow:hidden
+   فشرده شده و فیلدهای انتهای کارت قیچی می‌شدند. */
+.modal-body > * { flex-shrink: 0; }
 .modal-foot {
   flex: none; display: flex; align-items: center; justify-content: center; gap: var(--s-3);
   padding: var(--s-3) var(--s-5); border-top: 1px solid var(--line); background: var(--surface);
@@ -537,7 +542,8 @@ img { max-width: 100%; }
   position: fixed; z-index: 85;
   inset-block-start: calc(var(--topbar-h) + var(--s-2));
   inset-inline-end: var(--s-6);
-  width: 288px; max-height: calc(100vh - var(--topbar-h) - var(--s-7));
+  width: 288px; max-width: calc(100vw - (var(--s-6) * 2)); /* سیّال در پنجره باریک */
+  max-height: calc(100vh - var(--topbar-h) - var(--s-7));
   overflow-y: auto;
   background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--r-3); box-shadow: var(--shadow-3);
@@ -639,7 +645,7 @@ img { max-width: 100%; }
 .drill-list { display: flex; flex-direction: column; gap: var(--s-2); }
 .drill-row {
   display: grid; align-items: center; gap: var(--s-3);
-  grid-template-columns: 34px minmax(0, 1fr) 150px auto auto;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(96px, 150px) auto auto;
   padding: var(--s-3); border-radius: var(--r-1);
   background: var(--surface-2); border: 1px solid var(--line);
 }
@@ -993,6 +999,29 @@ img { max-width: 100%; }
   .login-brand { padding: var(--s-7); }
 }
 
+/* ── میانهٔ دسکتاپ/تبلت (769 تا 1024px) — شامل حالت «سایت دسکتاپ» کروم روی
+   موبایل که دیدگاه را ۹۸۰px می‌کند: برند کوتاه، نوار ابزار مرتب، و مودال
+   به‌جای کارتِ معلقِ وسط صفحه، شیتِ پایین می‌شود ─────────────────────── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .brand__sub { display: none; }
+  .brand__title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .list-toolbar { row-gap: var(--s-2); }
+  .list-toolbar__grow { flex: 1 1 240px; }
+  .list-toolbar .select { width: auto; min-width: 150px; flex: 0 1 auto; }
+  .list-toolbar__count { margin-inline-start: auto; }
+
+  .modal-backdrop { padding: 0; align-items: flex-end; }
+  .modal, .modal--sm, .modal--lg {
+    width: 100%; max-width: 100%;
+    max-height: 92vh;
+    max-height: 92svh;
+    border-radius: var(--r-3) var(--r-3) 0 0; border-bottom: none;
+  }
+  .modal-head { position: sticky; top: 0; z-index: 2; }
+  .sheet-handle { display: block; width: 44px; height: 4px; border-radius: var(--r-full); background: var(--line-strong); margin: var(--s-2) auto 0; }
+}
+
 /* موبایل بزرگ و کمتر: نوار پایین + FAB + شیت‌ها */
 @media (max-width: 768px) {
   :root { --topbar-h: 56px; --bottomnav-h: 74px; }
@@ -1047,11 +1076,16 @@ img { max-width: 100%; }
   /* مودال‌ها → bottom-sheet تمام‌صفحه با هدر/فوتر sticky */
   .modal-backdrop { padding: 0; align-items: flex-end; background: rgba(35, 33, 28, .5); }
   .modal {
-    width: 100%; max-width: 100%; height: auto; max-height: 96vh;
+    width: 100%; max-width: 100%; height: auto;
+    max-height: 96vh;
+    max-height: 96svh; /* در موبایل: ارتفاع واقعیِ دیدگاه (بدون نوار آدرس) */
     border-radius: var(--r-3) var(--r-3) 0 0; border-bottom: none;
     animation: sheetIn var(--t-slow) var(--ease);
   }
-  .modal--lg, .modal--full-sm { height: 96vh; max-height: 96vh; }
+  .modal--lg, .modal--full-sm {
+    height: 96vh; max-height: 96vh;
+    height: 96svh; max-height: 96svh;
+  }
   @keyframes sheetIn { from { transform: translateY(6%); opacity: .6; } }
   .sheet-handle { display: block; width: 44px; height: 4px; border-radius: var(--r-full); background: var(--line-strong); margin: var(--s-2) auto 0; }
   .modal-head { position: sticky; top: 0; z-index: 2; padding: var(--s-3) var(--s-4); }
@@ -1126,8 +1160,8 @@ img { max-width: 100%; }
   .app-topbar__inner { padding: 0 var(--s-3); }
 }
 
-/* لاگین: تک‌ستونه */
-@media (max-width: 900px) {
+/* لاگین: تک‌ستونه (بین 1024 تا 900 هم پنل ۴۵٪ برای فرم 420pxی تنگ می‌شد) */
+@media (max-width: 1024px) {
   .login-body { grid-template-columns: 1fr; }
   .login-brand { padding: var(--s-6) var(--s-5); gap: var(--s-4); justify-content: flex-start; }
   .login-brand__title { font-size: var(--fs-24); }
